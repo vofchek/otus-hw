@@ -17,45 +17,47 @@ func Unpack(packed string) (string, error) {
 	unpacked := strings.Builder{}
 	// предудущий символ
 	prevSymbol := ""
+	// часть строки, которую будем добавлять в unpacked
 	unpackedPart := ""
+	// режим экранирования
 	escaping := false
 
 	// по каждой руне
 	for _, r := range packed {
-		if !escaping && r == '\\' {
-			escaping = true
-			unpackedPart = prevSymbol
-			prevSymbol = ""
-			unpacked.WriteString(unpackedPart)
-			continue
-		}
+		// режим экранирования
+		if escaping {
+			// только цифры и \
+			if (r < '0' || r > '9') && r != '\\' {
+				return "", ErrInvalidString
+			}
 
-		// пробуем сделать цифру
-		number, notNumber := strconv.Atoi(string(r))
-
-		if escaping && notNumber != nil && r != '\\' {
-			return "", ErrInvalidString
-		}
-
-		// err пустая, если получили цифру
-		// prevSymbol пустой, если на предыдущей итерации получили цифру, тогда рубим выполнение с ошибкой
-		if !escaping && notNumber == nil && prevSymbol == "" {
-			return "", ErrInvalidString
-		}
-
-		// нашли цифру
-		if !escaping && notNumber == nil {
-			// игнорим error WriteString, он всё равно пустой
-			unpackedPart = strings.Repeat(prevSymbol, number)
-			prevSymbol = ""
-			// норм символ, который нужно будет повторять
-		} else {
 			unpackedPart = prevSymbol
 			prevSymbol = string(r)
+			escaping = false
+		} else {
+			switch {
+			// включение экранирования
+			case r == '\\':
+				escaping = true
+				unpackedPart = prevSymbol
+				prevSymbol = ""
+			// цифры
+			case r >= '0' && r <= '9':
+				if prevSymbol == "" {
+					return "", ErrInvalidString
+				}
+
+				// пробуем сделать цифру, игнори ошибку из-за проверки в case
+				number, _ := strconv.Atoi(string(r))
+				unpackedPart = strings.Repeat(prevSymbol, number)
+				prevSymbol = ""
+			default:
+				unpackedPart = prevSymbol
+				prevSymbol = string(r)
+			}
 		}
 
 		unpacked.WriteString(unpackedPart)
-		escaping = false
 	}
 
 	// последний символ не обрабатывается циклом, так что добавляем руками
