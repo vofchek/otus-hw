@@ -4,6 +4,7 @@ import (
 	"errors"
 	"strconv"
 	"strings"
+	"unicode"
 )
 
 var ErrInvalidString = errors.New("invalid string")
@@ -27,7 +28,7 @@ func Unpack(packed string) (string, error) {
 		// режим экранирования
 		if escaping {
 			// только цифры и \
-			if (r < '0' || r > '9') && r != '\\' {
+			if !unicode.IsDigit(r) && r != '\\' {
 				return "", ErrInvalidString
 			}
 
@@ -42,7 +43,7 @@ func Unpack(packed string) (string, error) {
 				unpackedPart = prevSymbol
 				prevSymbol = ""
 			// цифры
-			case r >= '0' && r <= '9':
+			case unicode.IsDigit(r):
 				if prevSymbol == "" {
 					return "", ErrInvalidString
 				}
