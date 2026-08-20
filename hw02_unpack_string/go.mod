@@ -1,4 +1,4 @@
-module github.com/vofchek/hw02_unpack_string
+module github.com/vofchek/otus-hw/hw02_unpack_string
 
 go 1.23
 
