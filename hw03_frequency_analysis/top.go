@@ -8,6 +8,8 @@ import (
 
 var onlyDashRegex = regexp.MustCompile("-{2,}")
 
+const badSymbols string = ",.!?:'\""
+
 type entry struct {
 	key   string
 	value uint
@@ -53,7 +55,7 @@ func Top10(text string) []string {
 	})
 
 	// результат не больше чем 10 строк
-	result := make([]string, 0, min(10))
+	result := make([]string, 0, min(10, len(entries)))
 
 	for i := 0; i < 10 && i < len(entries); i++ {
 		result = append(result, entries[i].key)
@@ -62,17 +64,17 @@ func Top10(text string) []string {
 	return result
 }
 
-// пробуем сделать чистый ключ из представленной строки, путем очистки от спец сиволов
-// символы - больше 1 подряд считаем словом
-// считаем что нам дали строку без пробела
+// пробуем сделать чистый ключ из представленной строки, путем очистки от спец сиволов.
+// символы - больше 1 подряд считаем словом.
+// считаем что нам дали строку без пробела.
 func tryMakeKey(str string) (string, bool) {
-	if onlyDashRegex.MatchString(str) {
-		return strings.Trim(str, ",.!?:'\""), true
+	cleanKey := strings.Trim(strings.ToLower(str), badSymbols)
+
+	if onlyDashRegex.MatchString(cleanKey) {
+		return cleanKey, true
 	}
 
-	cleanKey := strings.Trim(strings.ToLower(str), "-,.!?:'\"")
-
-	if len(cleanKey) == 0 {
+	if len(cleanKey) == 0 || cleanKey == "-" {
 		return "", false
 	}
 
