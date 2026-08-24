@@ -1,9 +1,12 @@
 package hw03frequencyanalysis
 
 import (
+	"regexp"
 	"sort"
 	"strings"
 )
+
+var onlyDashRegex = regexp.MustCompile("-{2,}")
 
 type entry struct {
 	key   string
@@ -13,18 +16,25 @@ type entry struct {
 func Top10(text string) []string {
 	partsFrequency := make(map[string]uint)
 
+	// считаем повторения слов
 	for _, part := range strings.Fields(text) {
-		_, inMap := partsFrequency[part]
-		if !inMap {
-			partsFrequency[part] = 0
+		key, isValidKey := tryMakeKey(part)
+		if !isValidKey {
+			continue
 		}
-		partsFrequency[part]++
+
+		_, inMap := partsFrequency[key]
+		if !inMap {
+			partsFrequency[key] = 0
+		}
+		partsFrequency[key]++
 	}
 
 	if len(partsFrequency) == 0 {
 		return make([]string, 0)
 	}
 
+	// слайс соответсвия строки и кол-ва повторений
 	entries := make([]entry, 0, len(partsFrequency))
 	for key, value := range partsFrequency {
 		entries = append(entries, entry{key, value})
@@ -42,6 +52,7 @@ func Top10(text string) []string {
 		return false
 	})
 
+	// результат не больше чем 10 строк
 	result := make([]string, 0, min(10))
 
 	for i := 0; i < 10 && i < len(entries); i++ {
@@ -49,4 +60,21 @@ func Top10(text string) []string {
 	}
 
 	return result
+}
+
+// пробуем сделать чистый ключ из представленной строки, путем очистки от спец сиволов
+// символы - больше 1 подряд считаем словом
+// считаем что нам дали строку без пробела
+func tryMakeKey(str string) (string, bool) {
+	if onlyDashRegex.MatchString(str) {
+		return strings.Trim(str, ",.!?:'\""), true
+	}
+
+	cleanKey := strings.Trim(strings.ToLower(str), "-,.!?:'\"")
+
+	if len(cleanKey) == 0 {
+		return "", false
+	}
+
+	return cleanKey, true
 }
