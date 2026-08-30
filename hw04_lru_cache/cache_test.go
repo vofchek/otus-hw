@@ -50,7 +50,21 @@ func TestCache(t *testing.T) {
 	})
 
 	t.Run("purge logic", func(t *testing.T) {
-		// Write me
+		c := NewCache(10)
+
+		for i := 0; i < 10; i++ {
+			key := Key(rune('a' + i))
+			c.Set(key, i)
+		}
+
+		c.Clear()
+
+		for i := 0; i < 10; i++ {
+			key := Key(rune('a' + i))
+			item, inCache := c.Get(key)
+
+			require.False(t, inCache, "item in cache: %+v", item)
+		}
 	})
 }
 
