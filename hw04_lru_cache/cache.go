@@ -1,6 +1,9 @@
 package hw04lrucache
 
-import "errors"
+import (
+	"errors"
+	"sync"
+)
 
 type Key string
 
@@ -14,6 +17,7 @@ type lruCache struct {
 	capacity int
 	queue    List
 	items    map[Key]*ListItem
+	sm       *sync.Mutex
 }
 
 // контейнер для значения + его ключ.
@@ -40,10 +44,14 @@ func NewCache(capacity int) Cache {
 		capacity: capacity,
 		queue:    NewList(),
 		items:    make(map[Key]*ListItem, capacity),
+		sm:       &sync.Mutex{},
 	}
 }
 
 func (lruCache *lruCache) Set(key Key, value interface{}) bool {
+	lruCache.sm.Lock()
+	defer lruCache.sm.Unlock()
+
 	item, inMap := lruCache.items[key]
 
 	if inMap {
@@ -66,6 +74,9 @@ func (lruCache *lruCache) Set(key Key, value interface{}) bool {
 }
 
 func (lruCache *lruCache) Get(key Key) (interface{}, bool) {
+	lruCache.sm.Lock()
+	defer lruCache.sm.Unlock()
+
 	item, inMap := lruCache.items[key]
 
 	if inMap {
@@ -78,6 +89,10 @@ func (lruCache *lruCache) Get(key Key) (interface{}, bool) {
 }
 
 func (lruCache *lruCache) Clear() {
+	lruCache.sm.Lock()
+
 	clear(lruCache.items)
 	lruCache.queue = NewList()
+
+	lruCache.sm.Unlock()
 }
