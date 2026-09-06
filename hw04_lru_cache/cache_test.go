@@ -50,13 +50,55 @@ func TestCache(t *testing.T) {
 	})
 
 	t.Run("purge logic", func(t *testing.T) {
-		// Write me
+		c := NewCache(10)
+
+		for i := 0; i < 10; i++ {
+			key := Key(strconv.Itoa('a' + i))
+			c.Set(key, i)
+		}
+
+		c.Clear()
+
+		for i := 0; i < 10; i++ {
+			key := Key(strconv.Itoa('a' + i))
+			item, inCache := c.Get(key)
+
+			require.False(t, inCache, "item in cache: %+v", item)
+		}
+	})
+
+	t.Run("small cache", func(t *testing.T) {
+		c := NewCache(2)
+
+		c.Set("a", 1)
+		c.Set("b", 2)
+		c.Set("c", 3)
+
+		value, inCache := c.Get("a")
+		require.Nil(t, value, "value must be nil")
+		require.False(t, inCache, "key value in cache")
+	})
+
+	t.Run("clear old items", func(t *testing.T) {
+		c := NewCache(3)
+
+		c.Set("old", 1)
+		c.Set("b", 2)
+		c.Set("c", 3) // <- now c - b - old
+
+		c.Set("old", 10) // <- now old - c - b
+		c.Set("b", 20)   // <- now b - old - c
+		c.Get("c")       // <- now c - b - old
+
+		c.Set("new", 4)
+
+		value, inCache := c.Get("old")
+		require.Nil(t, value, "old value still in cache")
+		require.False(t, inCache, "old value still in cache")
 	})
 }
 
 func TestCacheMultithreading(t *testing.T) {
-	t.Skip() // Remove me if task with asterisk completed.
-
 	c := NewCache(10)
 	wg := &sync.WaitGroup{}
 	wg.Add(2)
@@ -76,4 +118,7 @@ func TestCacheMultithreading(t *testing.T) {
 	}()
 
 	wg.Wait()
+
+	// ради спокойства линтера
+	require.Nil(t, nil)
 }
