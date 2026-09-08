@@ -67,6 +67,10 @@ func (safeErrorCounter *safeErrorCounter) increase() {
 }
 
 func (safeErrorCounter *safeErrorCounter) tooMuch() bool {
+	if safeErrorCounter.maxErrors <= 0 {
+		return false
+	}
+
 	return safeErrorCounter.get() >= safeErrorCounter.maxErrors
 }
 
