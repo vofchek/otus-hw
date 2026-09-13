@@ -7,27 +7,26 @@ import (
 
 var ErrErrorsLimitExceeded = errors.New("errors limit exceeded")
 
+var ErrErrorsNonPositiveWorkerNumber = errors.New("workers number must be positive")
+
 type Task func() error
 
 // Run starts tasks in n goroutines and stops its work when receiving m errors from tasks.
 func Run(tasks []Task, n, m int) error {
-	// нужен небуфферизованный канал, иначе не работает
+	if len(tasks) == 0 {
+		return nil
+	}
+
+	if n <= 0 {
+		return ErrErrorsNonPositiveWorkerNumber
+	}
+
+	// нужен небуфферизованный канал, чтобы воркер брал задачу когда готов.
+	// иначе в канале могут остаться задачи на выполнение, хотя уже накопилось достаточно ошибок.
 	taskChannel := make(chan Task)
+
 	safeErrorCounter := newSafeErrorCounter(m)
 	wg := &sync.WaitGroup{}
-
-	// produce
-	go func() {
-		defer close(taskChannel)
-
-		for _, task := range tasks {
-			if safeErrorCounter.tooMuch() {
-				return
-			}
-
-			taskChannel <- task
-		}
-	}()
 
 	// consumers
 	for i := 0; i < n; i++ {
@@ -44,6 +43,16 @@ func Run(tasks []Task, n, m int) error {
 		}()
 	}
 
+	// produce
+	for _, task := range tasks {
+		if safeErrorCounter.tooMuch() {
+			break
+		}
+
+		taskChannel <- task
+	}
+	close(taskChannel)
+
 	wg.Wait()
 
 	if safeErrorCounter.tooMuch() {
@@ -56,31 +65,31 @@ func Run(tasks []Task, n, m int) error {
 type safeErrorCounter struct {
 	errorCounter int
 	maxErrors    int
-	sm           *sync.Mutex
+	mu           *sync.Mutex
 }
 
-func (safeErrorCounter *safeErrorCounter) increase() {
-	safeErrorCounter.sm.Lock()
-	defer safeErrorCounter.sm.Unlock()
+func (c *safeErrorCounter) increase() {
+	c.mu.Lock()
+	defer c.mu.Unlock()
 
-	safeErrorCounter.errorCounter++
+	c.errorCounter++
 }
 
-func (safeErrorCounter *safeErrorCounter) tooMuch() bool {
-	if safeErrorCounter.maxErrors <= 0 {
+func (c *safeErrorCounter) tooMuch() bool {
+	if c.maxErrors <= 0 {
 		return false
 	}
 
-	return safeErrorCounter.get() >= safeErrorCounter.maxErrors
+	return c.get() >= c.maxErrors
 }
 
-func (safeErrorCounter *safeErrorCounter) get() int {
-	safeErrorCounter.sm.Lock()
-	defer safeErrorCounter.sm.Unlock()
+func (c *safeErrorCounter) get() int {
+	c.mu.Lock()
+	defer c.mu.Unlock()
 
-	return safeErrorCounter.errorCounter
+	return c.errorCounter
 }
 
 func newSafeErrorCounter(maxErrors int) *safeErrorCounter {
-	return &safeErrorCounter{sm: &sync.Mutex{}, maxErrors: maxErrors}
+	return &safeErrorCounter{mu: &sync.Mutex{}, maxErrors: maxErrors}
 }
