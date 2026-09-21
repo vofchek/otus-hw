@@ -18,7 +18,13 @@ func ExecutePipeline(in In, done In, stages ...Stage) Out {
 	}
 
 	go func() {
-		defer close(pipeIn)
+		defer func() {
+			close(pipeIn)
+			// дренаж входных значений
+			for v := range in {
+				_ = v
+			}
+		}()
 		for v := range in {
 			select {
 			case <-done:
@@ -43,7 +49,11 @@ func ExecutePipeline(in In, done In, stages ...Stage) Out {
 				return
 			case v, more := <-stageOut:
 				if more {
-					pipeOut <- v
+					select {
+					case pipeOut <- v:
+					case <-done:
+						return
+					}
 				} else {
 					return
 				}
