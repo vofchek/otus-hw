@@ -5,7 +5,7 @@ import (
 	"log"
 	"os"
 
-	"github.com/cheggaaa/pb/v3"
+	"github.com/cheggaaa/pb"
 )
 
 var (
@@ -13,6 +13,7 @@ var (
 	limit, offset int64
 )
 
+// размер увеличения лимита копирования
 var copyLimit int64 = 500
 
 func init() {
@@ -47,7 +48,8 @@ func main() {
 		steps++
 	}
 
-	progressBar := pb.Simple.Start64(steps)
+	progressBar := pb.New(int(steps))
+	progressBar.ShowCounters = true
 
 	cLimit := copyLimit
 	if limit > 0 && limit < copyLimit {
@@ -67,5 +69,5 @@ func main() {
 		progressBar.Increment()
 	}
 
-	progressBar.Finish()
+	progressBar.FinishPrint("Copy done!")
 }
