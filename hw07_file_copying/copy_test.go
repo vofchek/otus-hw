@@ -11,7 +11,7 @@ import (
 
 var inputFile = "./testdata/input.txt"
 
-func TestCopy(t *testing.T) {
+func TestCopyParams(t *testing.T) {
 	t.Run("negative offset", func(t *testing.T) {
 		err := Copy(inputFile, "/dev/null", -1, 1024)
 
@@ -42,8 +42,19 @@ func TestCopy(t *testing.T) {
 		require.ErrorIs(t, err, ErrPathMustNotBeEmpty)
 	})
 
+	t.Run("frompath equals topath", func(t *testing.T) {
+		err := Copy(inputFile, inputFile, 0, 0)
+
+		require.ErrorIs(t, err, ErrSamePath)
+	})
+}
+
+func TestCopy(t *testing.T) {
+
 	inStat, err := os.Stat(inputFile)
 	require.Nil(t, err)
+
+	testDir := t.TempDir()
 
 	testParams := []struct {
 		Title        string
@@ -60,7 +71,7 @@ func TestCopy(t *testing.T) {
 
 	for _, params := range testParams {
 		t.Run(params.Title, func(t *testing.T) {
-			out := fmt.Sprintf("./testdata/out_offset%d_limit%d.txt", params.Offset, params.Limit)
+			out := fmt.Sprintf("%s/out_offset%d_limit%d.txt", testDir, params.Offset, params.Limit)
 
 			copyErr := Copy(inputFile, out, params.Offset, params.Limit)
 
@@ -71,4 +82,56 @@ func TestCopy(t *testing.T) {
 			assert.Equal(t, params.ExpectedSize, outStat.Size(), "wrong out size")
 		})
 	}
+}
+
+func TestCopyEmptyFile(t *testing.T) {
+	testDir := t.TempDir()
+
+	in, err := os.Create(testDir + "/empty_in.txt")
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer in.Close()
+
+	copyErr := Copy(testDir+"/empty_in.txt", testDir+"/empty_out.txt", 0, 0)
+
+	require.Nil(t, copyErr)
+
+	outStat, err := os.Stat(testDir + "/empty_out.txt")
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	require.True(t, outStat.Mode().IsRegular(), "out not a regular file")
+	require.Empty(t, outStat.Size(), "out is not zero sized")
+}
+
+func TestCopyFileData(t *testing.T) {
+	data := "this is test string"
+	testDir := t.TempDir()
+
+	in, err := os.Create(testDir + "/empty_in.txt")
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer in.Close()
+
+	n, err := in.WriteString(data)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	if n != len(data) {
+		t.Fatal("tried to write in file and failed")
+	}
+
+	copyErr := Copy(testDir+"/empty_in.txt", testDir+"/empty_out.txt", 0, 0)
+
+	require.Nil(t, copyErr)
+
+	outData, err := os.ReadFile(testDir + "/empty_out.txt")
+	if err != nil {
+		t.Fatal("could not open out file")
+	}
+	require.Equal(t, data, string(outData))
 }

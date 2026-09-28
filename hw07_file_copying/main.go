@@ -11,10 +11,9 @@ import (
 var (
 	from, to      string
 	limit, offset int64
+	// размер увеличения лимита копирования.
+	copyLimit int64 = 500
 )
-
-// размер увеличения лимита копирования.
-var copyLimit int64 = 500
 
 func init() {
 	flag.StringVar(&from, "from", "", "file to read from")

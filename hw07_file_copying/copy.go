@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"log"
 	"os"
 )
 
@@ -12,6 +13,7 @@ var (
 	ErrOffsetExceedsFileSize      = errors.New("offset exceeds file size")
 	ErrOffsetMustBeZeroOrPositive = errors.New("offset must be >= 0")
 	ErrPathMustNotBeEmpty         = errors.New("path must not be empty")
+	ErrSamePath                   = errors.New("from path and to path must not be equal")
 )
 
 func Copy(fromPath, toPath string, offset, limit int64) error {
@@ -31,26 +33,41 @@ func Copy(fromPath, toPath string, offset, limit int64) error {
 	if err != nil {
 		return err
 	}
-	defer closeOrPanic(from)
+	defer func() {
+		err := from.Close()
+		if err != nil {
+			log.Printf("error while closing from: %v", err)
+		}
+	}()
 
 	fromStat, err := from.Stat()
 	if err != nil {
 		return fmt.Errorf("failed get state for fromPath: %w", err)
 	}
 
-	if fromStat.Size() == 0 {
-		return fmt.Errorf("file is zero sized: %w", ErrUnsupportedFile)
+	if !fromStat.Mode().IsRegular() {
+		return ErrUnsupportedFile
 	}
 
 	if fromStat.Size() < offset {
 		return ErrOffsetExceedsFileSize
 	}
 
+	toStat, err := os.Stat(toPath)
+	if err == nil && os.SameFile(toStat, fromStat) {
+		return ErrSamePath
+	}
+
 	to, err := os.Create(toPath)
 	if err != nil {
 		return fmt.Errorf("create toPath err: %w", err)
 	}
-	defer closeOrPanic(to)
+	defer func() {
+		err := to.Close()
+		if err != nil {
+			log.Printf("error while closing to: %v", err)
+		}
+	}()
 
 	if offset != 0 {
 		_, err := from.Seek(offset, io.SeekStart)
@@ -70,11 +87,4 @@ func Copy(fromPath, toPath string, offset, limit int64) error {
 	}
 
 	return nil
-}
-
-func closeOrPanic(f io.Closer) {
-	err := f.Close()
-	if err != nil {
-		panic(err)
-	}
 }
