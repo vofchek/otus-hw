@@ -50,7 +50,6 @@ func TestCopyParams(t *testing.T) {
 }
 
 func TestCopy(t *testing.T) {
-
 	inStat, err := os.Stat(inputFile)
 	require.Nil(t, err)
 
