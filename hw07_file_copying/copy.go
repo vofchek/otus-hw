@@ -6,6 +6,8 @@ import (
 	"io"
 	"log"
 	"os"
+
+	"github.com/cheggaaa/pb"
 )
 
 var (
@@ -14,6 +16,10 @@ var (
 	ErrOffsetMustBeZeroOrPositive = errors.New("offset must be >= 0")
 	ErrPathMustNotBeEmpty         = errors.New("path must not be empty")
 	ErrSamePath                   = errors.New("from path and to path must not be equal")
+
+	// размер порции скопированных данных.
+	copyBatchSize int64 = 1000
+	fullCopy      int64 = 0
 )
 
 func Copy(fromPath, toPath string, offset, limit int64) error {
@@ -76,15 +82,31 @@ func Copy(fromPath, toPath string, offset, limit int64) error {
 		}
 	}
 
-	if limit == 0 {
-		_, err = io.Copy(to, from)
-		return err
+	// подсчет total для полоски прогресса.
+	copySize := int64(0)
+	switch limit {
+	case fullCopy:
+		copySize = fromStat.Size() - offset
+	default:
+		copySize = min(fromStat.Size()-offset, limit)
 	}
 
-	_, err = io.CopyN(to, from, limit)
-	if !errors.Is(err, io.EOF) {
-		return err
+	bar := pb.New(int(copySize))
+
+	// копирование файла кусками, пока не скопируем запрошенный limit.
+	copied := int64(0)
+	for copied < copySize {
+		limitToCopy := min(copyBatchSize, copySize)
+
+		n, err := io.CopyN(to, from, limitToCopy)
+		copied = copied + n
+		bar.Add64(n)
+		if err != nil && !errors.Is(err, io.EOF) {
+			bar.FinishPrint("copy error!")
+			return err
+		}
 	}
+	bar.FinishPrint("copy done!")
 
 	return nil
 }
