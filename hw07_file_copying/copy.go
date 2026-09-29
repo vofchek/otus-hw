@@ -19,7 +19,7 @@ var (
 
 	// размер порции скопированных данных.
 	copyBatchSize int64 = 1000
-	fullCopy      int64 = 0
+	fullCopy      int64
 )
 
 func Copy(fromPath, toPath string, offset, limit int64) error {
@@ -99,7 +99,7 @@ func Copy(fromPath, toPath string, offset, limit int64) error {
 		limitToCopy := min(copyBatchSize, copySize)
 
 		n, err := io.CopyN(to, from, limitToCopy)
-		copied = copied + n
+		copied += n
 		bar.Add64(n)
 		if err != nil && !errors.Is(err, io.EOF) {
 			bar.FinishPrint("copy error!")
