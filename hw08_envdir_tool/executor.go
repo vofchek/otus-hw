@@ -27,6 +27,7 @@ func RunCmd(cmd []string, env Environment) (returnCode int) {
 	safePath := filepath.Clean(cmd[0])
 
 	ec := exec.Command(safePath, cmd[1:]...)
+	ec.Stdin = os.Stdin
 	ec.Stdout = os.Stdout
 	ec.Stderr = os.Stderr
 

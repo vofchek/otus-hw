@@ -37,7 +37,7 @@ func ReadDir(dir string) (Environment, error) {
 
 	dirStat, err := os.Stat(dir)
 	if err != nil {
-		return nil, fmt.Errorf("cant get stat for env dir, err: %w", ErrBadDirPath)
+		return nil, fmt.Errorf("cant get stat for env dir, err: %w", errors.Join(err, ErrBadDirPath))
 	}
 
 	if !dirStat.IsDir() {
@@ -52,7 +52,7 @@ func ReadDir(dir string) (Environment, error) {
 	envs := make(Environment)
 	for _, entry := range entries {
 		if !entry.Type().IsRegular() {
-			break
+			continue
 		}
 
 		if equalSignRg.MatchString(entry.Name()) {

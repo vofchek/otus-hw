@@ -25,6 +25,6 @@ func main() {
 	code := RunCmd(commandWithParams, env)
 
 	if code != 0 {
-		log.Fatalf("command returned code %d", code)
+		os.Exit(code)
 	}
 }

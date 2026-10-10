@@ -1,6 +1,7 @@
 package main
 
 import (
+	"io/fs"
 	"os"
 	"testing"
 
@@ -23,6 +24,9 @@ func TestReadDir(t *testing.T) {
 
 		_, err = ReadDir(dir + "/empty_in.txt")
 		require.ErrorIs(t, err, ErrNotDirectory)
+
+		_, err = ReadDir("")
+		require.ErrorIs(t, err, ErrBadDirPath)
 
 		_, err = ReadDir("./____dir_not_exists_____")
 		require.ErrorIs(t, err, ErrBadDirPath)
@@ -114,5 +118,26 @@ func TestReadDir(t *testing.T) {
 		require.Nil(t, err)
 		require.Contains(t, env, testKey)
 		require.Equal(t, testValueExpected, env[testKey].Value)
+	})
+
+	t.Run("not regular file", func(t *testing.T) {
+		dir := t.TempDir()
+
+		err := os.Mkdir(dir+"/SUBDIR", fs.ModeDir)
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		in, err := os.Create(dir + "/" + testKey)
+		if err != nil {
+			t.Fatal(err)
+		}
+		defer in.Close()
+
+		in.WriteString(testValue)
+
+		env, err := ReadDir(dir)
+		require.Nil(t, err)
+		require.Contains(t, env, testKey)
 	})
 }
