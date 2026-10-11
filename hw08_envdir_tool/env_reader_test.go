@@ -1,7 +1,6 @@
 package main
 
 import (
-	"io/fs"
 	"os"
 	"testing"
 
@@ -123,7 +122,8 @@ func TestReadDir(t *testing.T) {
 	t.Run("not regular file", func(t *testing.T) {
 		dir := t.TempDir()
 
-		err := os.Mkdir(dir+"/SUBDIR", fs.ModeDir)
+		// 0o755 - явное использование восмеричной формы чсла для golang-lint.
+		err := os.Mkdir(dir+"/SUBDIR", 0o755)
 		if err != nil {
 			t.Fatal(err)
 		}

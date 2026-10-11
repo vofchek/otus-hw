@@ -7,7 +7,6 @@ import (
 	"fmt"
 	"io"
 	"os"
-	"regexp"
 	"strings"
 )
 
@@ -24,8 +23,6 @@ var (
 	ErrNotDirectory        = errors.New("dir is not directory")
 	ErrDirectoryUreadable  = errors.New("cant read directory")
 	ErrEqualSignInFileName = errors.New("= in file name")
-
-	equalSignRg = regexp.MustCompile("=")
 )
 
 // ReadDir reads a specified directory and returns map of env variables.
@@ -55,21 +52,13 @@ func ReadDir(dir string) (Environment, error) {
 			continue
 		}
 
-		if equalSignRg.MatchString(entry.Name()) {
+		if strings.Contains(entry.Name(), "=") {
 			return nil, fmt.Errorf("bad file name %s, err :%w", entry.Name(), ErrEqualSignInFileName)
 		}
 
-		file, err := os.Open(dir + "/" + entry.Name())
+		rawValue, err := readline(dir + "/" + entry.Name())
 		if err != nil {
-			return nil, fmt.Errorf("cant read file, err: %w", err)
-		}
-		defer file.Close()
-
-		br := bufio.NewReader(file)
-		rawValue, err := br.ReadBytes('\n')
-
-		if err != nil && !errors.Is(err, io.EOF) {
-			return nil, fmt.Errorf("err while reading line, err: %w", err)
+			return nil, err
 		}
 
 		value := strings.TrimRight(string(bytes.ReplaceAll(rawValue, []byte{0x00}, []byte{'\n'})), "\t \n")
@@ -80,4 +69,21 @@ func ReadDir(dir string) (Environment, error) {
 	}
 
 	return envs, nil
+}
+
+func readline(path string) ([]byte, error) {
+	file, err := os.Open(path)
+	if err != nil {
+		return nil, fmt.Errorf("cant read file, err: %w", err)
+	}
+	defer file.Close()
+
+	br := bufio.NewReader(file)
+	line, err := br.ReadBytes('\n')
+
+	if err != nil && !errors.Is(err, io.EOF) {
+		return nil, fmt.Errorf("err while reading line, err: %w", err)
+	}
+
+	return line, nil
 }

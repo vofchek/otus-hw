@@ -3,6 +3,7 @@ package main
 import (
 	"errors"
 	"fmt"
+	"io"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -13,6 +14,14 @@ const (
 	codeDone = iota
 	codeErrEmptyCmd
 	codeErrStartErr
+)
+
+// переменные потоков, чтобы оставить возможность тестирования и не менять сигнатуру фукнции RunCmd.
+// альтернативой служит проброс потоков в качестве аргументов RunCmd, но тогда надо менять сигнатуру.
+var (
+	ecIn  io.Reader = os.Stdin
+	ecOut io.Writer = os.Stdout
+	ecErr io.Writer = os.Stderr
 )
 
 // RunCmd runs a command + arguments (cmd) with environment variables from env.
@@ -27,9 +36,9 @@ func RunCmd(cmd []string, env Environment) (returnCode int) {
 	safePath := filepath.Clean(cmd[0])
 
 	ec := exec.Command(safePath, cmd[1:]...)
-	ec.Stdin = os.Stdin
-	ec.Stdout = os.Stdout
-	ec.Stderr = os.Stderr
+	ec.Stdin = ecIn
+	ec.Stdout = ecOut
+	ec.Stderr = ecErr
 
 	commandEnv := make([]string, 0, 5)
 
