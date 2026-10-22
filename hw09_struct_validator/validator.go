@@ -69,6 +69,10 @@ func Validate(v interface{}) error {
 	for i := 0; i < rV.Type().NumField(); i++ {
 		field := rV.Type().Field(i)
 
+		if !field.IsExported() {
+			continue
+		}
+
 		tagValue, tagExists := field.Tag.Lookup(validateTag)
 
 		if !tagExists {

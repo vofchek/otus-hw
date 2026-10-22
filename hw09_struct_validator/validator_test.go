@@ -41,7 +41,8 @@ type (
 	}
 
 	MyTest struct {
-		MyField string `validate:"len:10|regexp:(?i)^[a-z]+$"`
+		MyField   string `validate:"len:10|regexp:(?i)^[a-z]+$"`
+		notPublic string `validate:"in:test1,test2"`
 	}
 )
 
@@ -202,7 +203,8 @@ func TestValidateAllValid(t *testing.T) {
 			meta:   nil,
 		},
 		MyTest{
-			MyField: "ThisIsTest",
+			MyField:   "ThisIsTest",
+			notPublic: "bad value but without validation",
 		},
 	}
 
