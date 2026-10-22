@@ -84,7 +84,6 @@ func Validate(v interface{}) error {
 		}
 
 		fieldErrors := make([]error, 0, 2)
-
 		fieldValue := rV.FieldByName(field.Name)
 
 		for _, vS := range strings.Split(tagValue, validatorSeparator) {
@@ -94,24 +93,31 @@ func Validate(v interface{}) error {
 			}
 
 			var validationErr error
-			switch validatorName {
-			case "len":
-				validationErr = validateLen(field, fieldValue, validatorParams)
-			case "min":
-				validationErr = validateMin(field, fieldValue, validatorParams)
-			case "max":
-				validationErr = validateMax(field, fieldValue, validatorParams)
-			case "regexp":
-				validationErr = validateRegex(field, fieldValue, validatorParams)
-			case "in":
-				validationErr = validateIn(field, fieldValue, validatorParams)
-			default:
-				err := errors.Join(ErrParseError, ErrUnknownValidator)
-				return fmt.Errorf("field %s, validatorName: %s, error: %w", field.Name, validatorName, err)
+			// если слайс\массив, тогда валидируем каждое значение отдельно.
+			if field.Type.Kind() == reflect.Slice || field.Type.Kind() == reflect.Array {
+				for i := 0; i < fieldValue.Len(); i++ {
+					validationErr = validateStructFieldValue(
+						validatorName,
+						field,
+						fieldValue.Index(i),
+						validatorParams,
+					)
+					if validationErr != nil {
+						break
+					}
+				}
+			} else {
+				validationErr = validateStructFieldValue(
+					validatorName,
+					field,
+					fieldValue,
+					validatorParams,
+				)
 			}
 
+			// если не ошибка валидации, тогда сразу выходим.
 			if validationErr != nil && !errors.Is(validationErr, ErrValidationError) {
-				return fmt.Errorf("field: %s, err: %w", field.Name, err)
+				return fmt.Errorf("field: %s, err: %w", field.Name, validationErr)
 			} else if errors.Is(validationErr, ErrValidationError) {
 				fieldErrors = append(fieldErrors, validationErr)
 			}
@@ -130,6 +136,8 @@ func Validate(v interface{}) error {
 	return nil
 }
 
+// возвращает название и параметры валидатора.
+// ошибка возвращается, если тег заполнен некорректно.
 func parseValidator(tag string) (string, string, error) {
 	matches := validatorRe.FindStringSubmatch(tag)
 	if len(matches) == 0 {
@@ -149,34 +157,64 @@ func parseValidator(tag string) (string, string, error) {
 	return matches[validatorIdx], matches[paramsIdx], nil
 }
 
-func validateLen(field reflect.StructField, value reflect.Value, validatorParams string) error {
+// валидация поля структуры.
+func validateStructFieldValue(
+	validatorName string,
+	field reflect.StructField,
+	value reflect.Value,
+	validatorParams string,
+) error {
+	var err error
+	switch validatorName {
+	case "len":
+		err = validateLen(value, validatorParams)
+	case "min":
+		err = validateMin(value, validatorParams)
+	case "max":
+		err = validateMax(value, validatorParams)
+	case "regexp":
+		err = validateRegex(value, validatorParams)
+	case "in":
+		err = validateIn(value, validatorParams)
+	default:
+		err = errors.Join(
+			ErrParseError,
+			fmt.Errorf(
+				"field %s, validatorName: %s, error: %w",
+				field.Name, validatorName, ErrUnknownValidator,
+			),
+		)
+	}
+
+	return err
+}
+
+func validateLen(value reflect.Value, validatorParams string) error {
 	pMax, err := strconv.Atoi(validatorParams)
 	if err != nil {
 		return errors.Join(ErrParseError, ErrBadValidatorTag)
 	}
 
-	correctType := field.Type.Kind() == reflect.String ||
-		field.Type.Kind() == reflect.Slice ||
-		field.Type.Kind() == reflect.Array
+	correctType := value.Kind() == reflect.String
 
 	if !correctType {
 		return errors.Join(ErrParseError, ErrWrongValueType)
 	}
 
-	if value.Len() != pMax {
+	if len(value.String()) != pMax {
 		return errors.Join(ErrValidationError, fmt.Errorf("%w, max=%+v", ErrInvalidLength, pMax))
 	}
 
 	return nil
 }
 
-func validateMin(field reflect.StructField, value reflect.Value, validatorParams string) error {
+func validateMin(value reflect.Value, validatorParams string) error {
 	pMin, err := strconv.Atoi(validatorParams)
 	if err != nil {
 		return errors.Join(ErrParseError, ErrBadValidatorTag)
 	}
 
-	correctType := field.Type.Kind() == reflect.Int
+	correctType := value.Kind() == reflect.Int
 
 	if !correctType {
 		return errors.Join(ErrParseError, ErrWrongValueType)
@@ -189,13 +227,13 @@ func validateMin(field reflect.StructField, value reflect.Value, validatorParams
 	return nil
 }
 
-func validateMax(field reflect.StructField, value reflect.Value, validatorParams string) error {
+func validateMax(value reflect.Value, validatorParams string) error {
 	pMax, err := strconv.Atoi(validatorParams)
 	if err != nil {
 		return errors.Join(ErrParseError, ErrBadValidatorTag)
 	}
 
-	correctType := field.Type.Kind() == reflect.Int
+	correctType := value.Kind() == reflect.Int
 
 	if !correctType {
 		return errors.Join(ErrParseError, ErrWrongValueType)
@@ -208,13 +246,13 @@ func validateMax(field reflect.StructField, value reflect.Value, validatorParams
 	return nil
 }
 
-func validateRegex(field reflect.StructField, value reflect.Value, validatorParams string) error {
+func validateRegex(value reflect.Value, validatorParams string) error {
 	re, err := regexp.Compile(validatorParams)
 	if err != nil {
 		return errors.Join(ErrParseError, ErrBadValidatorTag)
 	}
 
-	correctType := field.Type.Kind() == reflect.String
+	correctType := value.Kind() == reflect.String
 
 	if !correctType {
 		return errors.Join(ErrParseError, ErrWrongValueType)
@@ -228,17 +266,17 @@ func validateRegex(field reflect.StructField, value reflect.Value, validatorPara
 	return nil
 }
 
-func validateIn(field reflect.StructField, value reflect.Value, validatorParams string) error {
+func validateIn(value reflect.Value, validatorParams string) error {
 	inRaw := strings.Split(validatorParams, inParamsSeparator)
 
-	correctType := field.Type.Kind() == reflect.Int ||
-		field.Type.Kind() == reflect.String
+	correctType := value.Kind() == reflect.Int ||
+		value.Kind() == reflect.String
 
 	if !correctType {
 		return errors.Join(ErrParseError, ErrWrongValueType)
 	}
 
-	if field.Type.Kind() == reflect.Int {
+	if value.Kind() == reflect.Int {
 		in := make([]int, 0, len(inRaw))
 		// конвертация слайса строк в слайс int
 		for _, strValue := range inRaw {
@@ -254,7 +292,7 @@ func validateIn(field reflect.StructField, value reflect.Value, validatorParams 
 		}
 	}
 
-	if field.Type.Kind() == reflect.String {
+	if value.Kind() == reflect.String {
 		if slices.Index(inRaw, value.String()) == -1 {
 			return errors.Join(ErrValidationError, fmt.Errorf("%w, in=%+v", ErrNotIn, inRaw))
 		}

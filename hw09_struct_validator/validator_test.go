@@ -41,8 +41,8 @@ type (
 	}
 
 	MyTest struct {
-		MyField   string `validate:"len:10|regexp:(?i)^[a-z]+$"`
-		notPublic string `validate:"in:test1,test2"`
+		MyField   []string `validate:"len:10|regexp:(?i)^[a-z]+$"`
+		notPublic string   `validate:"in:test1,test2"`
 	}
 )
 
@@ -82,12 +82,12 @@ func TestValidate(t *testing.T) {
 
 		{
 			User{
-				ID:     strings.Repeat("i", 30),
+				ID:     strings.Repeat("i", 36),
 				Name:   "test",
 				Age:    25,
 				Email:  "email@email.com",
 				Role:   UserRole("admin"),
-				Phones: []string{"a", "a", "a", "a", "a", "a", "a", "a", "a", "a", "a"},
+				Phones: []string{strings.Repeat("P", 12)},
 				meta:   nil,
 			},
 			ErrInvalidLength,
@@ -100,7 +100,7 @@ func TestValidate(t *testing.T) {
 				Age:    10,
 				Email:  "email@email.com",
 				Role:   UserRole("admin"),
-				Phones: []string{"a", "a", "a", "a", "a", "a", "a", "a", "a", "a", "a"},
+				Phones: []string{strings.Repeat("P", 11)},
 				meta:   nil,
 			},
 			ErrValueLessThanMin,
@@ -113,7 +113,7 @@ func TestValidate(t *testing.T) {
 				Age:    150,
 				Email:  "email@email.com",
 				Role:   UserRole("admin"),
-				Phones: []string{"a", "a", "a", "a", "a", "a", "a", "a", "a", "a", "a"},
+				Phones: []string{strings.Repeat("P", 11)},
 				meta:   nil,
 			},
 			ErrValueMoreThanMax,
@@ -126,7 +126,7 @@ func TestValidate(t *testing.T) {
 				Age:    25,
 				Email:  "this_is_not_an_email",
 				Role:   UserRole("admin"),
-				Phones: []string{"a", "a", "a", "a", "a", "a", "a", "a", "a", "a", "a"},
+				Phones: []string{strings.Repeat("P", 11)},
 				meta:   nil,
 			},
 			ErrNotMatchingPattern,
@@ -139,7 +139,7 @@ func TestValidate(t *testing.T) {
 				Age:    25,
 				Email:  "email@email.com",
 				Role:   UserRole("invalid role"),
-				Phones: []string{"a", "a", "a", "a", "a", "a", "a", "a", "a", "a", "a"},
+				Phones: []string{strings.Repeat("P", 11)},
 				meta:   nil,
 			},
 			ErrNotIn,
@@ -147,13 +147,13 @@ func TestValidate(t *testing.T) {
 
 		{
 			MyTest{
-				MyField: "1",
+				MyField: []string{"1"},
 			},
 			ErrInvalidLength,
 		},
 		{
 			MyTest{
-				MyField: "1",
+				MyField: []string{"1"},
 			},
 			ErrNotMatchingPattern,
 		},
@@ -199,11 +199,11 @@ func TestValidateAllValid(t *testing.T) {
 			Age:    25,
 			Email:  "email@email.com",
 			Role:   UserRole("admin"),
-			Phones: []string{"a", "a", "a", "a", "a", "a", "a", "a", "a", "a", "a"},
+			Phones: []string{strings.Repeat("P", 11)},
 			meta:   nil,
 		},
 		MyTest{
-			MyField:   "ThisIsTest",
+			MyField:   []string{"ThisIsTest"},
 			notPublic: "bad value but without validation",
 		},
 	}
