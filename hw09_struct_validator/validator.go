@@ -33,6 +33,15 @@ var (
 	ErrNotMatchingPattern = errors.New("value does not match pattern")
 
 	validatorRe = regexp.MustCompile(`^(?<Name>[a-zA-Z_]+):(?<Params>.*)$`)
+
+	// зарегестрированные валидаторы.
+	validators = map[string]validationFn{
+		"len":    validateLen,
+		"in":     validateIn,
+		"max":    validateMax,
+		"min":    validateMin,
+		"regexp": validateRegexp,
+	}
 )
 
 type ValidationError struct {
@@ -53,6 +62,8 @@ func (v ValidationErrors) Error() string {
 
 	return s.String()
 }
+
+type validationFn func(value reflect.Value, params string) error
 
 func Validate(v interface{}) error {
 	if v == nil {
@@ -79,53 +90,32 @@ func Validate(v interface{}) error {
 			continue
 		}
 
-		if strings.TrimSpace(tagValue) == "" {
+		if len(strings.TrimSpace(tagValue)) == 0 {
 			return fmt.Errorf("field %s, error: %w", field.Name, errors.Join(ErrParseError, ErrEmptyValidatorTag))
 		}
 
 		fieldErrors := make([]error, 0, 2)
 		fieldValue := rV.FieldByName(field.Name)
 
-		for _, vS := range strings.Split(tagValue, validatorSeparator) {
-			validatorName, validatorParams, err := parseValidator(vS)
-			if err != nil {
-				return fmt.Errorf("field %s, error: %w", field.Name, errors.Join(ErrParseError, err))
-			}
-
-			var validationErr error
-			// если слайс\массив, тогда валидируем каждое значение отдельно.
-			if field.Type.Kind() == reflect.Slice || field.Type.Kind() == reflect.Array {
-				for i := 0; i < fieldValue.Len(); i++ {
-					validationErr = validateStructFieldValue(
-						validatorName,
-						field,
-						fieldValue.Index(i),
-						validatorParams,
-					)
-					if validationErr != nil {
-						break
-					}
-				}
-			} else {
-				validationErr = validateStructFieldValue(
-					validatorName,
-					field,
-					fieldValue,
-					validatorParams,
-				)
-			}
+		for _, validatorString := range strings.Split(tagValue, validatorSeparator) {
+			validationErr := validateField(field, fieldValue, validatorString)
 
 			// если не ошибка валидации, тогда сразу выходим.
-			if validationErr != nil && !errors.Is(validationErr, ErrValidationError) {
-				return fmt.Errorf("field: %s, err: %w", field.Name, validationErr)
-			} else if errors.Is(validationErr, ErrValidationError) {
+			isValidationErr := errors.Is(validationErr, ErrValidationError)
+
+			if isValidationErr {
 				fieldErrors = append(fieldErrors, validationErr)
+			}
+
+			if validationErr != nil && !isValidationErr {
+				return fmt.Errorf("field: %s, err: %w", field.Name, validationErr)
 			}
 		}
 
 		if len(fieldErrors) != 0 {
-			e := ValidationError{field.Name, errors.Join(fieldErrors...)}
-			validationErrors = append(validationErrors, e)
+			validationErrors = append(validationErrors,
+				ValidationError{field.Name, errors.Join(fieldErrors...)},
+			)
 		}
 	}
 
@@ -136,59 +126,58 @@ func Validate(v interface{}) error {
 	return nil
 }
 
+// валидирует значение поля структуры.
+func validateField(field reflect.StructField, fieldValue reflect.Value, validatorString string) error {
+	validationFn, validatorParams, err := parseValidator(validatorString)
+	if err != nil {
+		return err
+	}
+
+	var validationErr error
+	// если слайс\массив, тогда валидируем каждое значение отдельно.
+	if field.Type.Kind() == reflect.Slice || field.Type.Kind() == reflect.Array {
+		for i := 0; i < fieldValue.Len(); i++ {
+			validationErr = validationFn(fieldValue.Index(i), validatorParams)
+			if validationErr != nil {
+				break
+			}
+		}
+	} else {
+		validationErr = validationFn(fieldValue, validatorParams)
+	}
+
+	return validationErr
+}
+
 // возвращает название и параметры валидатора.
 // ошибка возвращается, если тег заполнен некорректно.
-func parseValidator(tag string) (string, string, error) {
+func parseValidator(tag string) (validationFn, string, error) {
 	matches := validatorRe.FindStringSubmatch(tag)
 	if len(matches) == 0 {
-		return "", "", fmt.Errorf("cant find validator string in %s, err: %w", tag, ErrBadValidatorTag)
+		return nil, "", fmt.Errorf("cant find validator string in %s, err: %w", tag, ErrBadValidatorTag)
 	}
 
 	validatorIdx := validatorRe.SubexpIndex("Name")
 	if validatorIdx == -1 {
-		return "", "", ErrBadValidatorTag
+		return nil, "", ErrBadValidatorTag
 	}
 
 	paramsIdx := validatorRe.SubexpIndex("Params")
 	if paramsIdx == -1 {
-		return "", "", ErrBadValidatorTag
+		return nil, "", ErrBadValidatorTag
 	}
 
-	return matches[validatorIdx], matches[paramsIdx], nil
-}
-
-// валидация поля структуры.
-func validateStructFieldValue(
-	validatorName string,
-	field reflect.StructField,
-	value reflect.Value,
-	validatorParams string,
-) error {
-	var err error
-	switch validatorName {
-	case "len":
-		err = validateLen(value, validatorParams)
-	case "min":
-		err = validateMin(value, validatorParams)
-	case "max":
-		err = validateMax(value, validatorParams)
-	case "regexp":
-		err = validateRegex(value, validatorParams)
-	case "in":
-		err = validateIn(value, validatorParams)
-	default:
-		err = errors.Join(
-			ErrParseError,
-			fmt.Errorf(
-				"field %s, validatorName: %s, error: %w",
-				field.Name, validatorName, ErrUnknownValidator,
-			),
-		)
+	validatorName := matches[validatorIdx]
+	validationFn, ok := validators[validatorName]
+	if !ok {
+		err := fmt.Errorf("validatorName: %s, error: %w", validatorName, errors.Join(ErrParseError, ErrUnknownValidator))
+		return nil, "", err
 	}
 
-	return err
+	return validationFn, matches[paramsIdx], nil
 }
 
+// Валидаторы.
 func validateLen(value reflect.Value, validatorParams string) error {
 	pMax, err := strconv.Atoi(validatorParams)
 	if err != nil {
@@ -246,7 +235,7 @@ func validateMax(value reflect.Value, validatorParams string) error {
 	return nil
 }
 
-func validateRegex(value reflect.Value, validatorParams string) error {
+func validateRegexp(value reflect.Value, validatorParams string) error {
 	re, err := regexp.Compile(validatorParams)
 	if err != nil {
 		return errors.Join(ErrParseError, ErrBadValidatorTag)
