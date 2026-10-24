@@ -32,8 +32,6 @@ var (
 	ErrValueMoreThanMax   = errors.New("value more than max")
 	ErrNotMatchingPattern = errors.New("value does not match pattern")
 
-	validatorRe = regexp.MustCompile(`^(?<Name>[a-zA-Z_]+):(?<Params>.*)$`)
-
 	// зарегестрированные валидаторы.
 	validators = map[string]validationFn{
 		"len":    validateLen,
@@ -54,10 +52,7 @@ type ValidationErrors []ValidationError
 func (v ValidationErrors) Error() string {
 	s := strings.Builder{}
 	for _, v := range v {
-		_, err := fmt.Fprintf(&s, "{%s: %+v}; ", v.Field, v.Err)
-		if err != nil {
-			panic(fmt.Errorf("cant assemble error text %w", err))
-		}
+		s.WriteString(fmt.Sprintf("{%s: %+v}; ", v.Field, v.Err))
 	}
 
 	return s.String()
@@ -66,10 +61,6 @@ func (v ValidationErrors) Error() string {
 type validationFn func(value reflect.Value, params string) error
 
 func Validate(v interface{}) error {
-	if v == nil {
-		return nil
-	}
-
 	rV := reflect.ValueOf(v)
 	if rV.Kind() != reflect.Struct {
 		return ErrNotStruct
@@ -137,9 +128,9 @@ func validateField(field reflect.StructField, fieldValue reflect.Value, validato
 	// если слайс\массив, тогда валидируем каждое значение отдельно.
 	if field.Type.Kind() == reflect.Slice || field.Type.Kind() == reflect.Array {
 		for i := 0; i < fieldValue.Len(); i++ {
-			validationErr = validationFn(fieldValue.Index(i), validatorParams)
-			if validationErr != nil {
-				break
+			valueValidationErr := validationFn(fieldValue.Index(i), validatorParams)
+			if valueValidationErr != nil {
+				validationErr = errors.Join(validationErr, valueValidationErr)
 			}
 		}
 	} else {
@@ -152,34 +143,24 @@ func validateField(field reflect.StructField, fieldValue reflect.Value, validato
 // возвращает название и параметры валидатора.
 // ошибка возвращается, если тег заполнен некорректно.
 func parseValidator(tag string) (validationFn, string, error) {
-	matches := validatorRe.FindStringSubmatch(tag)
-	if len(matches) == 0 {
-		return nil, "", fmt.Errorf("cant find validator string in %s, err: %w", tag, ErrBadValidatorTag)
+	validatorName, params, found := strings.Cut(tag, ":")
+	if !found {
+		err := fmt.Errorf("validatorName: %s, error: %w", validatorName, ErrParseError)
+		return nil, "", err
 	}
 
-	validatorIdx := validatorRe.SubexpIndex("Name")
-	if validatorIdx == -1 {
-		return nil, "", ErrBadValidatorTag
-	}
-
-	paramsIdx := validatorRe.SubexpIndex("Params")
-	if paramsIdx == -1 {
-		return nil, "", ErrBadValidatorTag
-	}
-
-	validatorName := matches[validatorIdx]
 	validationFn, ok := validators[validatorName]
 	if !ok {
 		err := fmt.Errorf("validatorName: %s, error: %w", validatorName, errors.Join(ErrParseError, ErrUnknownValidator))
 		return nil, "", err
 	}
 
-	return validationFn, matches[paramsIdx], nil
+	return validationFn, params, nil
 }
 
 // Валидаторы.
 func validateLen(value reflect.Value, validatorParams string) error {
-	pMax, err := strconv.Atoi(validatorParams)
+	maxLen, err := strconv.Atoi(validatorParams)
 	if err != nil {
 		return errors.Join(ErrParseError, ErrBadValidatorTag)
 	}
@@ -190,15 +171,15 @@ func validateLen(value reflect.Value, validatorParams string) error {
 		return errors.Join(ErrParseError, ErrWrongValueType)
 	}
 
-	if len(value.String()) != pMax {
-		return errors.Join(ErrValidationError, fmt.Errorf("%w, max=%+v", ErrInvalidLength, pMax))
+	if len(value.String()) != maxLen {
+		return errors.Join(ErrValidationError, fmt.Errorf("%w, max=%+v", ErrInvalidLength, maxLen))
 	}
 
 	return nil
 }
 
 func validateMin(value reflect.Value, validatorParams string) error {
-	pMin, err := strconv.Atoi(validatorParams)
+	minValue, err := strconv.Atoi(validatorParams)
 	if err != nil {
 		return errors.Join(ErrParseError, ErrBadValidatorTag)
 	}
@@ -209,15 +190,15 @@ func validateMin(value reflect.Value, validatorParams string) error {
 		return errors.Join(ErrParseError, ErrWrongValueType)
 	}
 
-	if pMin > int(value.Int()) {
-		return errors.Join(ErrValidationError, fmt.Errorf("%w, min=%d", ErrValueLessThanMin, pMin))
+	if minValue > int(value.Int()) {
+		return errors.Join(ErrValidationError, fmt.Errorf("%w, min=%d", ErrValueLessThanMin, minValue))
 	}
 
 	return nil
 }
 
 func validateMax(value reflect.Value, validatorParams string) error {
-	pMax, err := strconv.Atoi(validatorParams)
+	maxValue, err := strconv.Atoi(validatorParams)
 	if err != nil {
 		return errors.Join(ErrParseError, ErrBadValidatorTag)
 	}
@@ -228,8 +209,8 @@ func validateMax(value reflect.Value, validatorParams string) error {
 		return errors.Join(ErrParseError, ErrWrongValueType)
 	}
 
-	if pMax < int(value.Int()) {
-		return errors.Join(ErrValidationError, fmt.Errorf("%w, max=%d", ErrValueMoreThanMax, pMax))
+	if maxValue < int(value.Int()) {
+		return errors.Join(ErrValidationError, fmt.Errorf("%w, max=%d", ErrValueMoreThanMax, maxValue))
 	}
 
 	return nil

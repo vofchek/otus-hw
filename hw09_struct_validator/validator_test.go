@@ -41,8 +41,9 @@ type (
 	}
 
 	MyTest struct {
-		MyField   []string `validate:"len:10|regexp:(?i)^[a-z]+$"`
-		notPublic string   `validate:"in:test1,test2"`
+		MyField    []string `validate:"len:10|regexp:(?i)^[a-z]+$"`
+		SliceField []int    `validate:"in:10,20,30"`
+		notPublic  string   `validate:"in:test1,test2"`
 	}
 )
 
@@ -56,7 +57,7 @@ func TestValidateNotStruct(t *testing.T) {
 	t.Run("value is nil", func(t *testing.T) {
 		err := Validate(nil)
 
-		require.Nil(t, err)
+		require.ErrorIs(t, ErrNotStruct, err)
 	})
 }
 
@@ -70,14 +71,24 @@ func TestValidate(t *testing.T) {
 				Code: 302,
 				Body: "test",
 			},
-			ErrNotIn,
+			ValidationErrors{
+				ValidationError{
+					Field: "Code",
+					Err:   ErrNotIn,
+				},
+			},
 		},
 
 		{
 			App{
 				Version: strings.Repeat("a", 10),
 			},
-			ErrInvalidLength,
+			ValidationErrors{
+				ValidationError{
+					Field: "Version",
+					Err:   ErrInvalidLength,
+				},
+			},
 		},
 
 		{
@@ -90,7 +101,12 @@ func TestValidate(t *testing.T) {
 				Phones: []string{strings.Repeat("P", 12)},
 				meta:   nil,
 			},
-			ErrInvalidLength,
+			ValidationErrors{
+				ValidationError{
+					Field: "Phones",
+					Err:   ErrInvalidLength,
+				},
+			},
 		},
 
 		{
@@ -103,7 +119,12 @@ func TestValidate(t *testing.T) {
 				Phones: []string{strings.Repeat("P", 11)},
 				meta:   nil,
 			},
-			ErrValueLessThanMin,
+			ValidationErrors{
+				ValidationError{
+					Field: "Age",
+					Err:   ErrValueLessThanMin,
+				},
+			},
 		},
 
 		{
@@ -116,7 +137,12 @@ func TestValidate(t *testing.T) {
 				Phones: []string{strings.Repeat("P", 11)},
 				meta:   nil,
 			},
-			ErrValueMoreThanMax,
+			ValidationErrors{
+				ValidationError{
+					Field: "Age",
+					Err:   ErrValueMoreThanMax,
+				},
+			},
 		},
 
 		{
@@ -129,7 +155,12 @@ func TestValidate(t *testing.T) {
 				Phones: []string{strings.Repeat("P", 11)},
 				meta:   nil,
 			},
-			ErrNotMatchingPattern,
+			ValidationErrors{
+				ValidationError{
+					Field: "Email",
+					Err:   ErrNotMatchingPattern,
+				},
+			},
 		},
 
 		{
@@ -142,20 +173,49 @@ func TestValidate(t *testing.T) {
 				Phones: []string{strings.Repeat("P", 11)},
 				meta:   nil,
 			},
-			ErrNotIn,
+			ValidationErrors{
+				ValidationError{
+					Field: "Role",
+					Err:   ErrNotIn,
+				},
+			},
 		},
 
 		{
 			MyTest{
-				MyField: []string{"1"},
+				MyField:    []string{"1"},
+				SliceField: []int{10},
 			},
-			ErrInvalidLength,
+			ValidationErrors{
+				ValidationError{
+					Field: "MyField",
+					Err:   ErrInvalidLength,
+				},
+			},
 		},
 		{
 			MyTest{
-				MyField: []string{"1"},
+				MyField:    []string{"1"},
+				SliceField: []int{10},
 			},
-			ErrNotMatchingPattern,
+			ValidationErrors{
+				ValidationError{
+					Field: "MyField",
+					Err:   ErrNotMatchingPattern,
+				},
+			},
+		},
+		{
+			MyTest{
+				MyField:    []string{"1"},
+				SliceField: []int{777},
+			},
+			ValidationErrors{
+				ValidationError{
+					Field: "SliceField",
+					Err:   ErrNotIn,
+				},
+			},
 		},
 	}
 
@@ -166,20 +226,28 @@ func TestValidate(t *testing.T) {
 
 			// _ = tt
 			validationError := Validate(tt.in)
-			require.Error(t, validationError, "struct must be invalid")
+			require.Error(t, validationError, "not validation error")
 
 			var e ValidationErrors
 			require.ErrorAs(t, validationError, &e, "%+v", validationError)
 
+			var expected ValidationErrors
+			require.ErrorAs(t, tt.expectedErr, &expected, "test expected validation error wrong format")
+
+			errMap := make(map[string]error, 0)
+			for _, vErr := range expected {
+				errMap[vErr.Field] = vErr.Err
+			}
+
 			errExists := false
-			for j := range e {
-				if errors.Is(e[j].Err, tt.expectedErr) {
+			for _, err := range e {
+				validationErr, inMap := errMap[err.Field]
+				if inMap && errors.Is(err.Err, validationErr) {
 					errExists = true
 					break
 				}
 			}
-
-			assert.True(t, errExists, "no expected validation error")
+			assert.True(t, errExists, "no expected validation error for field %v", tt.expectedErr)
 		})
 	}
 }
@@ -203,8 +271,9 @@ func TestValidateAllValid(t *testing.T) {
 			meta:   nil,
 		},
 		MyTest{
-			MyField:   []string{"ThisIsTest"},
-			notPublic: "bad value but without validation",
+			MyField:    []string{"ThisIsTest"},
+			SliceField: []int{10},
+			notPublic:  "bad value but without validation",
 		},
 	}
 
@@ -216,6 +285,57 @@ func TestValidateAllValid(t *testing.T) {
 			// _ = tt
 			validationError := Validate(tt)
 			require.Nil(t, validationError, "some error: %+v", validationError)
+		})
+	}
+}
+
+func TestValidateParsingErorrs(t *testing.T) {
+	tests := []struct {
+		in interface{}
+		e  error
+	}{
+		{
+			in: struct {
+				A int `validate:""`
+			}{
+				A: 10,
+			},
+			e: ErrEmptyValidatorTag,
+		},
+		{
+			in: struct {
+				A int `validate:"UNKNOWN_VALIDATOR:0"`
+			}{
+				A: -1000,
+			},
+			e: ErrUnknownValidator,
+		},
+		{
+			in: struct {
+				A int `validate:"len:999"`
+			}{
+				A: 10000,
+			},
+			e: ErrWrongValueType,
+		},
+		{
+			in: struct {
+				A int `validate:"in:A,B,C"`
+			}{
+				A: 10000,
+			},
+			e: ErrBadValidatorTag,
+		},
+	}
+
+	for i, tt := range tests {
+		t.Run(fmt.Sprintf("case %d", i), func(t *testing.T) {
+			tt := tt
+			t.Parallel()
+
+			// _ = tt
+			validationError := Validate(tt.in)
+			require.Error(t, validationError, "struct cant be valid")
 		})
 	}
 }
