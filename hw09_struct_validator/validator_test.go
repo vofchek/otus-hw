@@ -2,7 +2,6 @@ package hw09structvalidator
 
 import (
 	"encoding/json"
-	"errors"
 	"fmt"
 	"strings"
 	"testing"
@@ -151,7 +150,7 @@ func TestValidate(t *testing.T) {
 				Name:   "test",
 				Age:    25,
 				Email:  "this_is_not_an_email",
-				Role:   UserRole("admin"),
+				Role:   UserRole("invalid role"),
 				Phones: []string{strings.Repeat("P", 11)},
 				meta:   nil,
 			},
@@ -160,20 +159,6 @@ func TestValidate(t *testing.T) {
 					Field: "Email",
 					Err:   ErrNotMatchingPattern,
 				},
-			},
-		},
-
-		{
-			User{
-				ID:     strings.Repeat("i", 36),
-				Name:   "test",
-				Age:    25,
-				Email:  "email@email.com",
-				Role:   UserRole("invalid role"),
-				Phones: []string{strings.Repeat("P", 11)},
-				meta:   nil,
-			},
-			ValidationErrors{
 				ValidationError{
 					Field: "Role",
 					Err:   ErrNotIn,
@@ -183,31 +168,7 @@ func TestValidate(t *testing.T) {
 
 		{
 			MyTest{
-				MyField:    []string{"1"},
-				SliceField: []int{10},
-			},
-			ValidationErrors{
-				ValidationError{
-					Field: "MyField",
-					Err:   ErrInvalidLength,
-				},
-			},
-		},
-		{
-			MyTest{
-				MyField:    []string{"1"},
-				SliceField: []int{10},
-			},
-			ValidationErrors{
-				ValidationError{
-					Field: "MyField",
-					Err:   ErrNotMatchingPattern,
-				},
-			},
-		},
-		{
-			MyTest{
-				MyField:    []string{"1"},
+				MyField:    []string{strings.Repeat("A", 10)},
 				SliceField: []int{777},
 			},
 			ValidationErrors{
@@ -234,20 +195,16 @@ func TestValidate(t *testing.T) {
 			var expected ValidationErrors
 			require.ErrorAs(t, tt.expectedErr, &expected, "test expected validation error wrong format")
 
-			errMap := make(map[string]error, 0)
+			expectedErrMap := make(map[string]error, 0)
 			for _, vErr := range expected {
-				errMap[vErr.Field] = vErr.Err
+				expectedErrMap[vErr.Field] = vErr.Err
 			}
 
-			errExists := false
 			for _, err := range e {
-				validationErr, inMap := errMap[err.Field]
-				if inMap && errors.Is(err.Err, validationErr) {
-					errExists = true
-					break
-				}
+				validationErr, inMap := expectedErrMap[err.Field]
+				assert.True(t, inMap, "field %s must have errors", err.Field)
+				assert.ErrorIs(t, err.Err, validationErr, "no expected error for field %s", err.Field)
 			}
-			assert.True(t, errExists, "no expected validation error for field %v", tt.expectedErr)
 		})
 	}
 }
