@@ -24,24 +24,21 @@ func GetDomainStat(r io.Reader, domain string) (DomainStat, error) {
 	scanner := bufio.NewScanner(r)
 	scanner.Split(bufio.ScanLines)
 
-	line := make([]byte, 0)
-	emailDomain := ""
-	atIndex := -1
 	var user User
 
 	for scanner.Scan() {
-		line = scanner.Bytes()
+		line := scanner.Bytes()
 
 		if err := json.Unmarshal(line, &user); err != nil {
 			return nil, err
 		}
 
-		atIndex = strings.Index(user.Email, "@")
+		atIndex := strings.Index(user.Email, "@")
 		if atIndex == -1 {
 			continue
 		}
 
-		emailDomain = strings.ToLower(user.Email[atIndex+1 : len(user.Email)])
+		emailDomain := strings.ToLower(user.Email[atIndex+1 : len(user.Email)])
 		if !strings.HasSuffix(emailDomain, domain) {
 			continue
 		}

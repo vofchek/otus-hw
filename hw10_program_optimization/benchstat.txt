@@ -4,11 +4,11 @@ pkg: github.com/vofchek/otus-hw/hw10_program_optimization
 cpu: AMD Ryzen 7 9800X3D 8-Core Processor           
                  │  bench/old.txt  │        bench/new.txt        │
                  │     sec/op      │   sec/op     vs base        │
-GetDomainStat-16   2440469.5n ± 0%   400.7n ± 0%  -99.98% (n=50)
+GetDomainStat-16   2440469.5n ± 0%   398.9n ± 1%  -99.98% (n=50)
 
                  │  bench/old.txt   │        bench/new.txt         │
                  │       B/op       │     B/op      vs base        │
-GetDomainStat-16   20887.306Ki ± 0%   4.071Ki ± 0%  -99.98% (n=50)
+GetDomainStat-16   20887.306Ki ± 0%   4.072Ki ± 0%  -99.98% (n=50)
 
                  │ bench/old.txt │       bench/new.txt        │
                  │   allocs/op   │ allocs/op   vs base        │

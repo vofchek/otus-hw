@@ -1,11 +1,9 @@
-package hw10programoptimization_test
+package hw10programoptimization
 
 import (
 	"archive/zip"
 	"log"
 	"testing"
-
-	hw10programoptimization "github.com/vofchek/otus-hw/hw10_program_optimization"
 )
 
 func BenchmarkGetDomainStat(b *testing.B) {
@@ -16,8 +14,14 @@ func BenchmarkGetDomainStat(b *testing.B) {
 	defer r.Close()
 
 	data, err := r.File[0].Open()
+	defer r.Close()
+
+	if err != nil {
+		r.Close()
+		b.Fatal(err)
+	}
 
 	for i := 0; i < b.N; i++ {
-		hw10programoptimization.GetDomainStat(data, "biz")
+		GetDomainStat(data, "biz")
 	}
 }
