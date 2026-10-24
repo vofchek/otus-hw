@@ -1,0 +1,56 @@
+goos: linux
+goarch: amd64
+pkg: github.com/vofchek/otus-hw/hw10_program_optimization
+cpu: AMD Ryzen 7 9800X3D 8-Core Processor           
+BenchmarkGetDomainStat-16    	     439	   2457150 ns/op	21396389 B/op	    6948 allocs/op
+BenchmarkGetDomainStat-16    	     451	   2455586 ns/op	21380854 B/op	    6763 allocs/op
+BenchmarkGetDomainStat-16    	     456	   2386865 ns/op	21374600 B/op	    6689 allocs/op
+BenchmarkGetDomainStat-16    	     450	   2420343 ns/op	21382301 B/op	    6779 allocs/op
+BenchmarkGetDomainStat-16    	     453	   2415277 ns/op	21378345 B/op	    6734 allocs/op
+BenchmarkGetDomainStat-16    	     444	   2481152 ns/op	21389955 B/op	    6870 allocs/op
+BenchmarkGetDomainStat-16    	     438	   2473515 ns/op	21397813 B/op	    6964 allocs/op
+BenchmarkGetDomainStat-16    	     434	   2483920 ns/op	21403234 B/op	    7028 allocs/op
+BenchmarkGetDomainStat-16    	     434	   2504418 ns/op	21403229 B/op	    7028 allocs/op
+BenchmarkGetDomainStat-16    	     447	   2440946 ns/op	21386129 B/op	    6824 allocs/op
+BenchmarkGetDomainStat-16    	     451	   2433856 ns/op	21380854 B/op	    6763 allocs/op
+BenchmarkGetDomainStat-16    	     439	   2573413 ns/op	21396468 B/op	    6948 allocs/op
+BenchmarkGetDomainStat-16    	     440	   2472071 ns/op	21395056 B/op	    6932 allocs/op
+BenchmarkGetDomainStat-16    	     445	   2516429 ns/op	21388387 B/op	    6854 allocs/op
+BenchmarkGetDomainStat-16    	     446	   2431029 ns/op	21387356 B/op	    6839 allocs/op
+BenchmarkGetDomainStat-16    	     448	   2466410 ns/op	21384520 B/op	    6809 allocs/op
+BenchmarkGetDomainStat-16    	     452	   2412258 ns/op	21379592 B/op	    6748 allocs/op
+BenchmarkGetDomainStat-16    	     445	   2443169 ns/op	21388556 B/op	    6854 allocs/op
+BenchmarkGetDomainStat-16    	     444	   2460554 ns/op	21390033 B/op	    6870 allocs/op
+BenchmarkGetDomainStat-16    	     446	   2432526 ns/op	21387340 B/op	    6839 allocs/op
+BenchmarkGetDomainStat-16    	     442	   2440133 ns/op	21392487 B/op	    6901 allocs/op
+BenchmarkGetDomainStat-16    	     441	   2426336 ns/op	21393724 B/op	    6917 allocs/op
+BenchmarkGetDomainStat-16    	     447	   2449439 ns/op	21386219 B/op	    6824 allocs/op
+BenchmarkGetDomainStat-16    	     448	   2408032 ns/op	21384591 B/op	    6809 allocs/op
+BenchmarkGetDomainStat-16    	     448	   2440806 ns/op	21384773 B/op	    6809 allocs/op
+BenchmarkGetDomainStat-16    	     445	   2421178 ns/op	21388719 B/op	    6854 allocs/op
+BenchmarkGetDomainStat-16    	     438	   2449413 ns/op	21397901 B/op	    6964 allocs/op
+BenchmarkGetDomainStat-16    	     450	   2422549 ns/op	21382046 B/op	    6778 allocs/op
+BenchmarkGetDomainStat-16    	     446	   2446041 ns/op	21387508 B/op	    6839 allocs/op
+BenchmarkGetDomainStat-16    	     446	   2441164 ns/op	21387260 B/op	    6839 allocs/op
+BenchmarkGetDomainStat-16    	     442	   2449275 ns/op	21392654 B/op	    6901 allocs/op
+BenchmarkGetDomainStat-16    	     436	   2447627 ns/op	21400501 B/op	    6996 allocs/op
+BenchmarkGetDomainStat-16    	     447	   2413827 ns/op	21385976 B/op	    6824 allocs/op
+BenchmarkGetDomainStat-16    	     445	   2428840 ns/op	21388561 B/op	    6855 allocs/op
+BenchmarkGetDomainStat-16    	     448	   2419676 ns/op	21384688 B/op	    6809 allocs/op
+BenchmarkGetDomainStat-16    	     452	   2428010 ns/op	21379682 B/op	    6749 allocs/op
+BenchmarkGetDomainStat-16    	     441	   2466980 ns/op	21393806 B/op	    6917 allocs/op
+BenchmarkGetDomainStat-16    	     436	   2457567 ns/op	21400682 B/op	    6996 allocs/op
+BenchmarkGetDomainStat-16    	     444	   2430538 ns/op	21389691 B/op	    6870 allocs/op
+BenchmarkGetDomainStat-16    	     441	   2441673 ns/op	21393718 B/op	    6916 allocs/op
+BenchmarkGetDomainStat-16    	     444	   2518988 ns/op	21389969 B/op	    6870 allocs/op
+BenchmarkGetDomainStat-16    	     444	   2401990 ns/op	21389945 B/op	    6870 allocs/op
+BenchmarkGetDomainStat-16    	     453	   2411399 ns/op	21378170 B/op	    6734 allocs/op
+BenchmarkGetDomainStat-16    	     441	   2462349 ns/op	21393809 B/op	    6917 allocs/op
+BenchmarkGetDomainStat-16    	     447	   2432292 ns/op	21385719 B/op	    6824 allocs/op
+BenchmarkGetDomainStat-16    	     445	   2421459 ns/op	21388642 B/op	    6855 allocs/op
+BenchmarkGetDomainStat-16    	     444	   2416890 ns/op	21389695 B/op	    6870 allocs/op
+BenchmarkGetDomainStat-16    	     446	   2414717 ns/op	21387180 B/op	    6839 allocs/op
+BenchmarkGetDomainStat-16    	     445	   2439215 ns/op	21388727 B/op	    6855 allocs/op
+BenchmarkGetDomainStat-16    	     441	   2434898 ns/op	21393800 B/op	    6916 allocs/op
+PASS
+ok  	github.com/vofchek/otus-hw/hw10_program_optimization	195.317s
