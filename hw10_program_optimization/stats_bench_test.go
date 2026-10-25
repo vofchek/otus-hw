@@ -2,26 +2,39 @@ package hw10programoptimization
 
 import (
 	"archive/zip"
-	"log"
+	"bytes"
+	"io"
 	"testing"
 )
 
 func BenchmarkGetDomainStat(b *testing.B) {
 	r, err := zip.OpenReader("testdata/users.dat.zip")
 	if err != nil {
-		log.Fatal(err)
+		b.Fatal(err)
 	}
 	defer r.Close()
 
-	data, err := r.File[0].Open()
-	defer r.Close()
-
+	dataFile, err := r.File[0].Open()
 	if err != nil {
-		r.Close()
 		b.Fatal(err)
 	}
 
-	for i := 0; i < b.N; i++ {
-		GetDomainStat(data, "biz")
+	data, err := io.ReadAll(dataFile)
+	if err != nil {
+		dataFile.Close()
+		b.Fatal(err)
+	}
+
+	if err := dataFile.Close(); err != nil {
+		b.Fatal(err)
+	}
+
+	b.ReportAllocs()
+	b.ResetTimer()
+	for range b.N {
+		_, err := GetDomainStat(bytes.NewReader(data), "biz")
+		if err != nil {
+			b.Fatal(err)
+		}
 	}
 }

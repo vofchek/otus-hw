@@ -8,13 +8,7 @@ import (
 )
 
 type User struct {
-	// ID       int
-	// Name     string
-	// Username string
 	Email string
-	// Phone    string
-	// Password string
-	// Address  string
 }
 
 type DomainStat map[string]int
@@ -22,13 +16,12 @@ type DomainStat map[string]int
 func GetDomainStat(r io.Reader, domain string) (DomainStat, error) {
 	result := make(DomainStat)
 	scanner := bufio.NewScanner(r)
-	scanner.Split(bufio.ScanLines)
-
-	var user User
+	suffix := "." + domain
 
 	for scanner.Scan() {
 		line := scanner.Bytes()
 
+		var user User
 		if err := json.Unmarshal(line, &user); err != nil {
 			return nil, err
 		}
@@ -38,11 +31,10 @@ func GetDomainStat(r io.Reader, domain string) (DomainStat, error) {
 			continue
 		}
 
-		emailDomain := strings.ToLower(user.Email[atIndex+1 : len(user.Email)])
-		if !strings.HasSuffix(emailDomain, domain) {
-			continue
+		emailDomain := strings.ToLower(user.Email[atIndex+1:])
+		if strings.HasSuffix(emailDomain, suffix) {
+			result[emailDomain]++
 		}
-		result[emailDomain]++
 	}
 
 	if scanner.Err() != nil {
