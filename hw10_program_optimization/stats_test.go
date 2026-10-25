@@ -41,8 +41,7 @@ func TestGetDomainStat(t *testing.T) {
 
 func TestUserUnmarshal(t *testing.T) {
 	data := `{"Id":1,"Name":"Howard Mendoza","Username":"0Oliver","Email":"aliquid_qui_ea@Browsedrive.gov","Phone":"6-866-899-36-79","Password":"InAQJvsq","Address":"Blackbird Place 25"}
-{"Id":2,"Name":"Jesse Vasquez","Username":"qRichardson","Phone":"9-373-949-64-00","Password":"SiZLeNSGn","Address":"Fulton Hill 80"}
-`
+{"Id":2,"Name":"Jesse Vasquez","Username":"qRichardson","Phone":"9-373-949-64-00","Password":"SiZLeNSGn","Address":"Fulton Hill 80"}`
 	t.Run("populating user without email", func(t *testing.T) {
 		result, err := GetDomainStat(bytes.NewBufferString(data), "gov")
 		require.NoError(t, err)
@@ -58,7 +57,7 @@ func TestEmailWithDomainWithoutDot(t *testing.T) {
 {"Id":5,"Name":"Janice Rose","Username":"KeithHart","Email":"nulla@Linktype.com","Phone":"146-91-01","Password":"acSBF5","Address":"Russell Trail 61"}
 {"Id":6,"Email":"nulla@Linktype.not_a_com"}`
 
-	t.Run("populating user without email", func(t *testing.T) {
+	t.Run("email with domain almost same domain", func(t *testing.T) {
 		result, err := GetDomainStat(bytes.NewBufferString(data), "com")
 		require.NoError(t, err)
 		require.Equal(t, DomainStat{"browsecat.com": 2, "linktype.com": 1}, result)
