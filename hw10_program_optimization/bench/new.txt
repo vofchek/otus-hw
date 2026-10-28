@@ -1,0 +1,16 @@
+goos: linux
+goarch: amd64
+pkg: github.com/vofchek/otus-hw/hw10_program_optimization
+cpu: AMD Ryzen 7 9800X3D 8-Core Processor           
+BenchmarkGetDomainStat-16    	      12	  91388793 ns/op	27439150 B/op	  700017 allocs/op
+BenchmarkGetDomainStat-16    	      12	  91088526 ns/op	27438661 B/op	  700017 allocs/op
+BenchmarkGetDomainStat-16    	      12	  91359386 ns/op	27438670 B/op	  700017 allocs/op
+BenchmarkGetDomainStat-16    	      12	  91664668 ns/op	27438661 B/op	  700017 allocs/op
+BenchmarkGetDomainStat-16    	      12	  91549400 ns/op	27438664 B/op	  700017 allocs/op
+BenchmarkGetDomainStat-16    	      12	  91443328 ns/op	27438665 B/op	  700017 allocs/op
+BenchmarkGetDomainStat-16    	      12	  91108292 ns/op	27438664 B/op	  700017 allocs/op
+BenchmarkGetDomainStat-16    	      12	  91954422 ns/op	27438670 B/op	  700017 allocs/op
+BenchmarkGetDomainStat-16    	      12	  92222177 ns/op	27438661 B/op	  700017 allocs/op
+BenchmarkGetDomainStat-16    	      12	  91857550 ns/op	27438665 B/op	  700017 allocs/op
+PASS
+ok  	github.com/vofchek/otus-hw/hw10_program_optimization	13.119s
