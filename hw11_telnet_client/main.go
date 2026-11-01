@@ -66,21 +66,21 @@ func main() {
 // выделено в отдельную функцию из-за создания канала.
 func makeStdinGenerator(done <-chan struct{}) chan string {
 	stdin := make(chan string)
-	reader := bufio.NewScanner(os.Stdin)
 
 	go func() {
 		defer close(stdin)
+		scanner := bufio.NewScanner(os.Stdin)
 
-		for reader.Scan() {
+		for scanner.Scan() {
 			select {
 			case <-done:
 				return
 			default:
 			}
 
-			stdin <- reader.Text() + "\n"
+			stdin <- scanner.Text() + "\n"
 		}
-		if reader.Err() != nil {
+		if scanner.Err() != nil {
 			fmt.Println("highly unlikely")
 		}
 	}()
@@ -127,12 +127,18 @@ func startSending(signalContext context.Context, stop context.CancelFunc, telnet
 		select {
 		case <-signalContext.Done():
 			return
-		case line := <-stdin:
+		case line, ok := <-stdin:
+			if !ok {
+				printServiceMessagef("...EOF")
+				return
+			}
+
 			select {
 			case <-signalContext.Done():
 				return
 			default:
 			}
+
 			io.WriteString(in, line)
 			err := telnet.Send()
 			if err != nil {
