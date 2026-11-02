@@ -7,8 +7,6 @@ import (
 	"time"
 )
 
-const defaultBufSize = 1024
-
 var (
 	ErrClientClosed       = errors.New("client closed")
 	ErrClientNotConnected = errors.New("client not connected")
