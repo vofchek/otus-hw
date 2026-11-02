@@ -18,21 +18,29 @@ import (
 var timeout time.Duration
 
 func init() {
-	flag.DurationVar(&timeout, "timeout", time.Second*10, "--timeout")
+	flag.DurationVar(&timeout, "timeout", time.Second*10, "--timeout 10s")
 }
 
 func main() {
+	flag.Usage = func() {
+		fmt.Fprintf(os.Stderr, "telnet - простой клиент telnet\n\n")
+		fmt.Fprintf(os.Stderr, "Использование:\n  telnet [флаги] [адрес] [порт]\n\n")
+		flag.PrintDefaults()
+	}
+
 	flag.Parse()
 
 	if len(flag.Args()) < 1 {
-		log.Fatal("set address")
+		flag.Usage()
+		os.Exit(1)
 	}
 	address := flag.Args()[0]
 
-	port := ""
-	if len(flag.Args()) >= 2 {
-		port = flag.Args()[1]
+	if len(flag.Args()) < 2 {
+		flag.Usage()
+		os.Exit(1)
 	}
+	port := flag.Args()[1]
 
 	ctx := context.Background()
 	signalContext, stop := signal.NotifyContext(ctx, os.Interrupt, os.Kill)
@@ -153,6 +161,6 @@ func startSending(signalContext context.Context, stop context.CancelFunc, telnet
 	}
 }
 
-func printServiceMessagef(format string, v ...interface{}) {
+func printServiceMessagef(format string, v ...any) {
 	fmt.Fprintf(os.Stderr, format+"\n", v...)
 }
