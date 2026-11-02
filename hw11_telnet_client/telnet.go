@@ -7,6 +7,8 @@ import (
 	"time"
 )
 
+const defaultBufSize = 1024
+
 var (
 	ErrClientClosed       = errors.New("client closed")
 	ErrClientNotConnected = errors.New("client not connected")
@@ -61,18 +63,8 @@ func (client *GoClient) Send() error {
 		return ErrClientClosed
 	}
 
-	buffer := make([]byte, 1024)
-	n, err := client.in.Read(buffer)
-	if err != nil {
-		return err
-	}
-
-	_, err = client.conn.Write(buffer[:n])
-	if err != nil {
-		return err
-	}
-
-	return nil
+	_, err := io.Copy(client.conn, client.in)
+	return err
 }
 
 func (client *GoClient) Receive() error {
@@ -80,16 +72,6 @@ func (client *GoClient) Receive() error {
 		return ErrClientClosed
 	}
 
-	buffer := make([]byte, 1024)
-	n, err := client.conn.Read(buffer)
-	if err != nil {
-		return err
-	}
-
-	_, err = client.out.Write(buffer[:n])
-	if err != nil {
-		return err
-	}
-
-	return nil
+	_, err := io.Copy(client.out, client.conn)
+	return err
 }
