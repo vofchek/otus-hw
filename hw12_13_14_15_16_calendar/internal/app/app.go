@@ -2,19 +2,34 @@ package app
 
 import (
 	"context"
+
+	"github.com/vofchek/otus-hw/hw12_13_14_15_calendar/internal/storage"
 )
 
-type App struct { // TODO
+type App struct {
+	logger  Logger
+	storage Storage
 }
 
-type Logger interface { // TODO
+type Logger interface {
+	Info(msg string)
+	Error(msg string)
+	Log(ctx context.Context, msg string, args ...any)
 }
 
-type Storage interface { // TODO
+type Storage interface {
+	Add(event *storage.Event) error
+	Update(event storage.Event) error
+	Delete(id string) error
+	GetById(id string) (*storage.Event, error)
+	GetAll() ([]*storage.Event, error)
 }
 
 func New(logger Logger, storage Storage) *App {
-	return &App{}
+	return &App{
+		logger,
+		storage,
+	}
 }
 
 func (a *App) CreateEvent(ctx context.Context, id, title string) error {

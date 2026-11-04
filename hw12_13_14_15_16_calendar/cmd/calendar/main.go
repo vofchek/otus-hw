@@ -2,16 +2,19 @@ package main
 
 import (
 	"context"
+	"errors"
 	"flag"
+	"log"
 	"os"
 	"os/signal"
 	"syscall"
 	"time"
 
-	"github.com/fixme_my_friend/hw12_13_14_15_calendar/internal/app"
-	"github.com/fixme_my_friend/hw12_13_14_15_calendar/internal/logger"
-	internalhttp "github.com/fixme_my_friend/hw12_13_14_15_calendar/internal/server/http"
-	memorystorage "github.com/fixme_my_friend/hw12_13_14_15_calendar/internal/storage/memory"
+	"github.com/vofchek/otus-hw/hw12_13_14_15_calendar/internal/app"
+	"github.com/vofchek/otus-hw/hw12_13_14_15_calendar/internal/logger"
+	internalhttp "github.com/vofchek/otus-hw/hw12_13_14_15_calendar/internal/server/http"
+	memorystorage "github.com/vofchek/otus-hw/hw12_13_14_15_calendar/internal/storage/memory"
+	sqlstorage "github.com/vofchek/otus-hw/hw12_13_14_15_calendar/internal/storage/sql"
 )
 
 var configFile string
@@ -29,9 +32,17 @@ func main() {
 	}
 
 	config := NewConfig()
-	logg := logger.New(config.Logger.Level)
+	err := config.ParseFile(configFile)
+	if err != nil {
+		log.Fatal("cant parse config, err: ", err)
+	}
 
-	storage := memorystorage.New()
+	logg := logger.New(config.Logger.Level, os.Stdout)
+
+	storage, err := createStorage(config)
+	if err != nil {
+		log.Fatal("cant create storage, err: ", err)
+	}
 	calendar := app.New(logg, storage)
 
 	server := internalhttp.NewServer(logg, calendar)
@@ -58,4 +69,15 @@ func main() {
 		cancel()
 		os.Exit(1) //nolint:gocritic
 	}
+}
+
+func createStorage(config Config) (app.Storage, error) {
+	switch config.Storage.Type {
+	case "memory":
+		return memorystorage.New(), nil
+	case "sql":
+		return sqlstorage.New(), nil
+	}
+
+	return nil, errors.New("unknown storage type " + config.Storage.Type)
 }
