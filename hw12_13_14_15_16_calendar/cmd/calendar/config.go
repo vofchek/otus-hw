@@ -18,6 +18,7 @@ type LoggerConf struct {
 
 type StorageConf struct {
 	Type string `mapstructure:"type"`
+	DSN  string `mapstructure:"dsn"`
 }
 
 func NewConfig() Config {

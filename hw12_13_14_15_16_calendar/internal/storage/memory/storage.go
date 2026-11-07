@@ -1,15 +1,15 @@
 package memorystorage
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
-	"strconv"
 	"sync"
-	"time"
 
 	storage "github.com/vofchek/otus-hw/hw12_13_14_15_calendar/internal/storage"
 )
 
+// храним сериализованный мапу событий сериализованных в виде json
 type Storage struct {
 	storage map[string][]byte
 	mu      sync.RWMutex //nolint:unused
@@ -22,11 +22,9 @@ func New() *Storage {
 	}
 }
 
-func (s *Storage) Add(event *storage.Event) error {
+func (s *Storage) Add(ctx context.Context, event *storage.Event) error {
 	s.mu.Lock()
 	defer s.mu.Unlock()
-
-	event.ID = strconv.FormatInt(time.Now().UnixMilli(), 16)
 
 	d, err := json.Marshal(event)
 	if err != nil {
@@ -36,7 +34,7 @@ func (s *Storage) Add(event *storage.Event) error {
 	return nil
 }
 
-func (s *Storage) Update(event storage.Event) error {
+func (s *Storage) Update(ctx context.Context, event storage.Event) error {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
@@ -52,7 +50,7 @@ func (s *Storage) Update(event storage.Event) error {
 	return nil
 }
 
-func (s *Storage) Delete(id string) error {
+func (s *Storage) Delete(ctx context.Context, id string) error {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
@@ -60,7 +58,7 @@ func (s *Storage) Delete(id string) error {
 	return nil
 }
 
-func (s *Storage) GetById(id string) (*storage.Event, error) {
+func (s *Storage) GetById(ctx context.Context, id string) (*storage.Event, error) {
 	s.mu.RLock()
 	defer s.mu.RUnlock()
 
@@ -77,7 +75,7 @@ func (s *Storage) GetById(id string) (*storage.Event, error) {
 	return &event, nil
 }
 
-func (s *Storage) GetAll() ([]*storage.Event, error) {
+func (s *Storage) GetAll(ctx context.Context) ([]*storage.Event, error) {
 	s.mu.RLock()
 	defer s.mu.RUnlock()
 

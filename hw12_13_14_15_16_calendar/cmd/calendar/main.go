@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"flag"
+	"fmt"
 	"log"
 	"os"
 	"os/signal"
@@ -15,6 +16,8 @@ import (
 	internalhttp "github.com/vofchek/otus-hw/hw12_13_14_15_calendar/internal/server/http"
 	memorystorage "github.com/vofchek/otus-hw/hw12_13_14_15_calendar/internal/storage/memory"
 	sqlstorage "github.com/vofchek/otus-hw/hw12_13_14_15_calendar/internal/storage/sql"
+
+	"database/sql"
 )
 
 var configFile string
@@ -76,7 +79,11 @@ func createStorage(config Config) (app.Storage, error) {
 	case "memory":
 		return memorystorage.New(), nil
 	case "sql":
-		return sqlstorage.New(), nil
+		db, err := sql.Open("pgx", config.Storage.DSN)
+		if err != nil {
+			return nil, fmt.Errorf("cant create sql db connection, err: %w", err)
+		}
+		return sqlstorage.New(db), nil
 	}
 
 	return nil, errors.New("unknown storage type " + config.Storage.Type)

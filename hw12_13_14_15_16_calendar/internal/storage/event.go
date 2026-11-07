@@ -3,6 +3,8 @@ package storage
 import (
 	"errors"
 	"time"
+
+	"github.com/google/uuid"
 )
 
 var (
@@ -14,7 +16,12 @@ type Event struct {
 	Title            string
 	OnDate           time.Time
 	Duration         time.Duration
-	Desc             string
+	Description      string
 	UserId           int
 	NotificateBefore time.Duration
+}
+
+func NewEvent() *Event {
+	// uuid.Must паникует при ошибке, не уверен стоит это использовать или нет
+	return &Event{ID: uuid.Must(uuid.NewV7()).String()}
 }
