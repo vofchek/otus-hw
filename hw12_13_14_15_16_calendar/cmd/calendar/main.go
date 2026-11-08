@@ -6,6 +6,7 @@ import (
 	"flag"
 	"fmt"
 	"log"
+	"net"
 	"os"
 	"os/signal"
 	"syscall"
@@ -50,8 +51,15 @@ func main() {
 
 	server := internalhttp.NewServer(logg, calendar)
 
-	ctx, cancel := signal.NotifyContext(context.Background(),
-		syscall.SIGINT, syscall.SIGTERM, syscall.SIGHUP)
+	// передаём адрес для сервера(лучше передавать конфиг в server.Start)
+	ctx, cancel := signal.NotifyContext(
+		context.WithValue(
+			context.Background(),
+			internalhttp.ContextAddressKey,
+			net.JoinHostPort(config.HTTP.Host, config.HTTP.Port),
+		),
+		syscall.SIGINT, syscall.SIGTERM, syscall.SIGHUP,
+	)
 	defer cancel()
 
 	go func() {

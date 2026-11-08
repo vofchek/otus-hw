@@ -5,3 +5,7 @@ level = "INFO"
 type = "memory"
 # type = "sql"
 # dsn = "postgres://user@127.0.0.1:5432:password?"
+
+[http]
+host = "127.0.0.1"
+port = "7000"

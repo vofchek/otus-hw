@@ -10,6 +10,7 @@ import (
 type Config struct {
 	Logger  LoggerConf  `mapstructure:"logger"`
 	Storage StorageConf `mapstructure:"storage"`
+	HTTP    HTTPConf    `mapstructure:"http"`
 }
 
 type LoggerConf struct {
@@ -19,6 +20,11 @@ type LoggerConf struct {
 type StorageConf struct {
 	Type string `mapstructure:"type"`
 	DSN  string `mapstructure:"dsn"`
+}
+
+type HTTPConf struct {
+	Host string `mapstructure:"host"`
+	Port string `mapstructure:"port"`
 }
 
 func NewConfig() Config {
