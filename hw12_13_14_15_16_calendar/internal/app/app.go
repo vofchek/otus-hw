@@ -18,11 +18,11 @@ type Logger interface {
 }
 
 type Storage interface {
-	Add(ctx context.Context, event *storage.Event) error
+	Add(ctx context.Context, event storage.Event) error
 	Update(ctx context.Context, event storage.Event) error
 	Delete(ctx context.Context, id string) error
 	GetById(ctx context.Context, id string) (*storage.Event, error)
-	GetAll(ctx context.Context) ([]*storage.Event, error)
+	GetAll(ctx context.Context) ([]storage.Event, error)
 }
 
 func New(logger Logger, storage Storage) *App {

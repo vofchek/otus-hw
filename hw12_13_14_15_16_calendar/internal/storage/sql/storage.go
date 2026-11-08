@@ -26,7 +26,7 @@ func (s *Storage) Close(ctx context.Context) error {
 	return s.db.Close()
 }
 
-func (s *Storage) Add(ctx context.Context, event *storage.Event) error {
+func (s *Storage) Add(ctx context.Context, event storage.Event) error {
 	_, err := s.conn.ExecContext(
 		ctx,
 		`
@@ -80,8 +80,8 @@ func (s *Storage) GetById(ctx context.Context, id string) (*storage.Event, error
 	return event, err
 }
 
-func (s *Storage) GetAll(ctx context.Context) ([]*storage.Event, error) {
-	events := make([]*storage.Event, 0)
+func (s *Storage) GetAll(ctx context.Context) ([]storage.Event, error) {
+	events := make([]storage.Event, 0)
 	rows, err := s.conn.QueryContext(ctx, "SELECT * FROM calendar_event ORDER BY id ASC")
 	if err != nil {
 		return nil, err
@@ -95,7 +95,7 @@ func (s *Storage) GetAll(ctx context.Context) ([]*storage.Event, error) {
 			return nil, err
 		}
 
-		events = append(events, &event)
+		events = append(events, event)
 	}
 
 	if rows.Err() != nil {

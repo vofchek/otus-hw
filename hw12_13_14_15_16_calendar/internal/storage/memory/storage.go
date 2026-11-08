@@ -2,7 +2,6 @@ package memorystorage
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
 	"sync"
 
@@ -11,26 +10,27 @@ import (
 
 // храним сериализованный мапу событий сериализованных в виде json
 type Storage struct {
-	storage map[string][]byte
+	storage map[string]storage.Event
 	mu      sync.RWMutex //nolint:unused
 }
 
 func New() *Storage {
 	return &Storage{
 		mu:      sync.RWMutex{},
-		storage: make(map[string][]byte),
+		storage: make(map[string]storage.Event),
 	}
 }
 
-func (s *Storage) Add(ctx context.Context, event *storage.Event) error {
+func (s *Storage) Add(ctx context.Context, event storage.Event) error {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
-	d, err := json.Marshal(event)
+	err := s.assertEventValid(&event)
 	if err != nil {
-		return fmt.Errorf("cant marshal event")
+		return err
 	}
-	s.storage[event.ID] = d
+
+	s.storage[event.ID] = event
 	return nil
 }
 
@@ -38,15 +38,12 @@ func (s *Storage) Update(ctx context.Context, event storage.Event) error {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
-	if len(event.ID) == 0 {
-		return fmt.Errorf("event id is empty")
+	err := s.assertEventValid(&event)
+	if err != nil {
+		return err
 	}
 
-	d, err := json.Marshal(event)
-	if err != nil {
-		return fmt.Errorf("cant marshal event")
-	}
-	s.storage[event.ID] = d
+	s.storage[event.ID] = event
 	return nil
 }
 
@@ -62,32 +59,61 @@ func (s *Storage) GetById(ctx context.Context, id string) (*storage.Event, error
 	s.mu.RLock()
 	defer s.mu.RUnlock()
 
-	d, ok := s.storage[id]
+	event, ok := s.storage[id]
 	if !ok {
 		return nil, storage.ErrNotFound
-	}
-
-	var event storage.Event
-	if err := json.Unmarshal(d, &event); err != nil {
-		return nil, err
 	}
 
 	return &event, nil
 }
 
-func (s *Storage) GetAll(ctx context.Context) ([]*storage.Event, error) {
+func (s *Storage) GetAll(ctx context.Context) ([]storage.Event, error) {
 	s.mu.RLock()
 	defer s.mu.RUnlock()
 
-	r := make([]*storage.Event, len(s.storage))
+	r := make([]storage.Event, len(s.storage))
 	i := 0
 	for _, v := range s.storage {
-		var event *storage.Event
-		if err := json.Unmarshal(v, &event); err != nil {
-			return nil, err
-		}
-
-		r[i] = event
+		r[i] = v
+		i++
 	}
 	return r, nil
+}
+
+func (s *Storage) assertEventValid(event *storage.Event) error {
+	if len(event.ID) == 0 {
+		return fmt.Errorf("event id is empty")
+	}
+
+	if event.UserId <= 0 {
+		return storage.ErrUserIdRequired
+	}
+
+	if event.OnDate.IsZero() {
+		return storage.ErrOnDateRequired
+	}
+
+	for _, e := range s.storage {
+		if e.UserId != event.UserId || e.ID == event.ID {
+			continue
+		}
+
+		eStart := e.OnDate
+		eEnd := e.OnDate.Add(e.Duration)
+		eventStart := event.OnDate
+		eventEnd := event.OnDate.Add(event.Duration)
+
+		intersected := eStart.Compare(eventEnd) <= 0 && eEnd.Compare(eventStart) >= 0
+		if intersected {
+			return fmt.Errorf(
+				"%w, intersection with event: {ID: %s, OnDate: %s, Duration: %s}",
+				storage.ErrDateBusy,
+				e.ID,
+				e.OnDate,
+				e.Duration,
+			)
+		}
+	}
+
+	return nil
 }

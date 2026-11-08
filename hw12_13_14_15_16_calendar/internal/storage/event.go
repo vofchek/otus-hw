@@ -8,7 +8,10 @@ import (
 )
 
 var (
-	ErrNotFound = errors.New("event not found")
+	ErrNotFound       = errors.New("event not found")
+	ErrUserIdRequired = errors.New("userId required")
+	ErrOnDateRequired = errors.New("onDate required")
+	ErrDateBusy       = errors.New("date is busy")
 )
 
 type Event struct {
