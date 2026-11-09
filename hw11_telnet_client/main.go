@@ -9,6 +9,7 @@ import (
 	"net"
 	"os"
 	"os/signal"
+	"sync"
 	"time"
 )
 
@@ -50,37 +51,40 @@ func main() {
 	defer telnet.Close()
 	printServiceMessagef("...Connected to %s:%s\n", address, port)
 
+	wg := sync.WaitGroup{}
+
 	// конкурентно читаем
+	wg.Add(1)
 	go func() {
-		defer stop()
+		defer wg.Done()
 
 		err := telnet.Receive()
-		if err != nil {
-			if !errors.Is(err, ErrClientClosed) && !errors.Is(err, net.ErrClosed) {
-				printServiceMessagef("err on receive: %v\n", err)
-			}
-			return
+		if err == nil {
+			printServiceMessagef("...Connection was closed by peer\n")
+		} else if !errors.Is(err, ErrClientClosed) && !errors.Is(err, net.ErrClosed) {
+			printServiceMessagef("err on receive: %v\n", err)
 		}
 
-		printServiceMessagef("...Connection was closed by peer\n")
+		stop()
 	}()
 
 	// конкурентно пишем
 	go func() {
-		defer stop()
-
 		err := telnet.Send()
-		if err != nil {
-			if !errors.Is(err, ErrClientClosed) && !errors.Is(err, net.ErrClosed) {
-				printServiceMessagef("err on send: %v\n", err)
-			}
-			return
+		if err == nil {
+			printServiceMessagef("...EOF\n")
+		} else if !errors.Is(err, ErrClientClosed) && !errors.Is(err, net.ErrClosed) {
+			printServiceMessagef("err on send: %v\n", err)
 		}
-		printServiceMessagef("...EOF\n")
+
+		stop()
 	}()
 
 	// ждём прекращения работы
 	<-signalContext.Done()
+
+	_ = telnet.Close()
+	wg.Wait()
 
 	printServiceMessagef("...Telnet exit\n")
 }
