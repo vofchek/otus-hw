@@ -11,6 +11,11 @@ POSTGRES_DB ?= backend
 POSTGRES_PORT ?= 5435
 POSTGRES_CONTAINER := postgres-calendar
 
+#GOOSE
+GOOSE_DRIVER ?= postgres
+GOOSE_DBSTRING ?= postgres://$(POSTGRES_USER):$(POSTGRES_PASSWORD)@localhost:$(POSTGRES_PORT)/$(POSTGRES_DB)
+GOOSE_MIGRATION_DIR ?= ./migrations
+
 #Rabbit
 RABBIT_USER ?= rabbit
 RABBIT_PASSWORD ?= password
@@ -25,7 +30,7 @@ run-postgres:
 	-e POSTGRES_PASSWORD=$(POSTGRES_PASSWORD) \
 	-e POSTGRES_DB=$(POSTGRES_DB) \
 	-p $(POSTGRES_PORT):5432 \
-	-v postgres-data:/var/lib/postgresql/data \
+	-v postgres-data:/var/lib/postgresql \
 	postgres:latest
 
 run-rabbit:
@@ -55,12 +60,18 @@ version: build
 	$(BIN) version
 
 test:
-	go test -race ./internal/... ./pkg/...
+	go test -race ./internal/...
 
 install-lint-deps:
 	(which golangci-lint > /dev/null) || curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh | sh -s -- -b $(shell go env GOPATH)/bin v1.57.2
 
 lint: install-lint-deps
 	golangci-lint run ./...
+
+migrate-up:
+	GOOSE_DRIVER=$(GOOSE_DRIVER) GOOSE_DBSTRING=$(GOOSE_DBSTRING) GOOSE_MIGRATION_DIR=$(GOOSE_MIGRATION_DIR) goose up
+
+migrate-down:
+	GOOSE_DRIVER=$(GOOSE_DRIVER) GOOSE_DBSTRING=$(GOOSE_DBSTRING) GOOSE_MIGRATION_DIR=$(GOOSE_MIGRATION_DIR) goose down
 
 .PHONY: build run build-img run-img version test lint

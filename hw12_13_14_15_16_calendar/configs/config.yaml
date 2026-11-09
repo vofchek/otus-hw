@@ -1,5 +1,11 @@
-[logger]
-level = "INFO"
+logger:
+  level: "DEBUG"
+  output: "logs/calendar.log"
 
-# TODO
-# ...
+storage:
+  type: "sql"
+  dsn: "host=localhost port=5435 user=postgres password=password dbname=backend sslmode=disable"
+
+http:
+  host: "127.0.0.1"
+  port: "7000"
