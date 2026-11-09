@@ -19,6 +19,7 @@ linters-settings:
           - github.com/cheggaaa/pb
           - github.com/spf13/viper
           - github.com/google/uuid
+          - github.com/jackc/pgx/v5
           - github.com/vofchek/otus-hw/hw12_13_14_15_calendar/internal/storage
           - github.com/vofchek/otus-hw/hw12_13_14_15_calendar/internal/sql
           - github.com/vofchek/otus-hw/hw12_13_14_15_calendar/internal/http

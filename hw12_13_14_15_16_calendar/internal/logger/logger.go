@@ -24,7 +24,7 @@ func New(level string, w io.Writer) *Logger {
 	}
 
 	return &Logger{
-		slog:      slog.New(slog.NewJSONHandler(w, opts)),
+		slog:      slog.New(slog.NewTextHandler(w, opts)),
 		slogLevel: slogLevel,
 	}
 }

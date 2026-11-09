@@ -2,14 +2,14 @@ package main
 
 import (
 	"context"
-	"database/sql"
 	"errors"
 	"flag"
-	"fmt"
+	"io"
 	"log"
 	"net"
 	"os"
 	"os/signal"
+	"path/filepath"
 	"syscall"
 	"time"
 
@@ -40,7 +40,22 @@ func main() {
 		log.Fatal("cant parse config, err: ", err)
 	}
 
-	logg := logger.New(config.Logger.Level, os.Stdout)
+	writer := io.Writer(os.Stdout)
+	if path := config.Logger.Output; path != "" {
+		if err := os.MkdirAll(filepath.Dir(path), 0o755); err != nil {
+			log.Fatal("cant create log dir, err: ", err)
+		}
+
+		f, err := os.OpenFile(path, os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0o644)
+		if err != nil {
+			log.Fatal("cant open log file, err: ", err)
+		}
+		defer f.Close()
+
+		writer = io.MultiWriter(os.Stdout, f)
+	}
+
+	logg := logger.New(config.Logger.Level, writer)
 
 	storage, err := createStorage(config)
 	if err != nil {
@@ -55,6 +70,19 @@ func main() {
 		syscall.SIGINT, syscall.SIGTERM, syscall.SIGHUP,
 	)
 	defer cancel()
+
+	if err := storage.Connect(ctx); err != nil {
+		logg.Error("cant connect storage, err: " + err.Error())
+		return
+	}
+
+	server.RegisterOnShutdown(func() {
+		ctx, cancel := context.WithTimeout(context.Background(), time.Second*3)
+		defer cancel()
+		if err := storage.Close(ctx); err != nil {
+			logg.Error("cant disconnect storage, err: " + err.Error())
+		}
+	})
 
 	go func() {
 		<-ctx.Done()
@@ -81,11 +109,7 @@ func createStorage(config Config) (app.Storage, error) {
 	case "memory":
 		return memorystorage.New(), nil
 	case "sql":
-		db, err := sql.Open("pgx", config.Storage.DSN)
-		if err != nil {
-			return nil, fmt.Errorf("cant create sql db connection, err: %w", err)
-		}
-		return sqlstorage.New(db), nil
+		return sqlstorage.New(config.Storage.DSN), nil
 	}
 
 	return nil, errors.New("unknown storage type " + config.Storage.Type)

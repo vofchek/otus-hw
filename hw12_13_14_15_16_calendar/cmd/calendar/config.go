@@ -1,6 +1,8 @@
 package main
 
 import (
+	"errors"
+
 	"github.com/spf13/viper"
 )
 
@@ -14,7 +16,8 @@ type Config struct {
 }
 
 type LoggerConf struct {
-	Level string `mapstructure:"level"`
+	Level  string `mapstructure:"level"`
+	Output string `mapstructure:"output"`
 }
 
 type StorageConf struct {
@@ -40,6 +43,14 @@ func (c *Config) ParseFile(configPath string) error {
 	err := viper.Unmarshal(&c)
 	if err != nil {
 		return err
+	}
+
+	if len(c.HTTP.Host) == 0 {
+		return errors.New("http host not set")
+	}
+
+	if len(c.HTTP.Port) == 0 {
+		return errors.New("http port not set")
 	}
 
 	return nil

@@ -18,6 +18,8 @@ type Logger interface {
 }
 
 type Storage interface {
+	Connect(ctx context.Context) error
+	Close(ctx context.Context) error
 	Add(ctx context.Context, event storage.Event) error
 	Update(ctx context.Context, event storage.Event) error
 	Delete(ctx context.Context, id string) error

@@ -3,19 +3,11 @@ package internalhttp
 import (
 	"context"
 	"encoding/json"
-	"errors"
 	"fmt"
 	"net/http"
 	"os"
 	"time"
 )
-
-var (
-	ErrConfigAddressEmpty       = errors.New("address is empty")
-	ErrConfigAddressIsNotString = errors.New("address is not string")
-)
-
-const ContextAddressKey = "http.address"
 
 type Server struct {
 	Logger Logger
@@ -35,19 +27,19 @@ func NewServer(logger Logger, app Application) *Server {
 	return &Server{
 		Logger: logger,
 		App:    app,
+		server: &http.Server{
+			ReadHeaderTimeout: time.Second,
+		},
 	}
 }
 
 // address - хост + порт, чтобы не передавть эти данные через контекст.
 func (s *Server) Start(ctx context.Context, address string) error {
 	mux := http.NewServeMux()
-	mux.Handle("GET /", loggingMiddleware(s.Logger, http.HandlerFunc(indexHandler)))
+	mux.Handle("GET /", loggingMiddleware(s.Logger, http.HandlerFunc(s.indexHandler)))
 
-	s.server = &http.Server{
-		Addr:              address,
-		Handler:           mux,
-		ReadHeaderTimeout: time.Second,
-	}
+	s.server.Addr = address
+	s.server.Handler = mux
 
 	go func() {
 		err := s.server.ListenAndServe()
@@ -67,7 +59,11 @@ func (s *Server) Stop(ctx context.Context) error {
 	return err
 }
 
-func indexHandler(w http.ResponseWriter, r *http.Request) {
+func (s *Server) RegisterOnShutdown(f func()) {
+	s.server.RegisterOnShutdown(f)
+}
+
+func (s *Server) indexHandler(w http.ResponseWriter, r *http.Request) {
 	_ = r.Context()
 	t, err := json.Marshal(`{success: true, payload: [1,2,3]}`)
 	if err != nil {

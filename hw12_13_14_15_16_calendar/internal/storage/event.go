@@ -15,13 +15,13 @@ var (
 )
 
 type Event struct {
-	ID               string
-	Title            string
-	OnDate           time.Time
-	Duration         time.Duration
-	Description      string
-	UserID           int
-	NotificateBefore time.Duration
+	ID               string        `db:"id"`
+	Title            string        `db:"title"`
+	OnDate           time.Time     `db:"on_date"`
+	Duration         time.Duration `db:"duration"`
+	Description      string        `db:"description"`
+	UserID           int           `db:"user_id"`
+	NotificateBefore time.Duration `db:"notificate_before"`
 }
 
 func NewEvent() *Event {

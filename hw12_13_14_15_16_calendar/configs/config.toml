@@ -1,10 +1,11 @@
 [logger]
 level = "INFO"
+output = "logs/calendar.log"
 
 [storage]
 type = "memory"
 # type = "sql"
-# dsn = "postgres://user@127.0.0.1:5432:password?"
+# dsn = "host=localhost port=5432 user=USER password=PASSWORD dbname=DBNAME sslmode=verify-full"
 
 [http]
 host = "127.0.0.1"

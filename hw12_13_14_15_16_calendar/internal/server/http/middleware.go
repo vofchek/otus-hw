@@ -2,8 +2,8 @@ package internalhttp
 
 import (
 	"fmt"
+	"net"
 	"net/http"
-	"strings"
 	"time"
 )
 
@@ -17,17 +17,21 @@ func loggingMiddleware(logg Logger, next http.Handler) http.Handler {
 
 		next.ServeHTTP(decoratedWrapper, r)
 
-		ip, _, _ := strings.Cut(r.RemoteAddr, ":")
+		ip, _, _ := net.SplitHostPort(r.RemoteAddr)
+		statusCode := decoratedWrapper.StatusCode
+		if statusCode == 0 {
+			statusCode = http.StatusOK
+		}
 
 		logg.Info(
 			fmt.Sprintf(
-				"%s [%s] %s %s %s %d %d \"%s\"",
+				"%s [%s] %s %s %s %d %d \\\"%s\\\"",
 				ip,                              // IP клиента
 				time.Now().Format(time.RFC3339), // дата и время запроса
 				r.Method,                        // метод
 				r.RequestURI,                    // path
 				r.Proto,                         // версия HTTP
-				decoratedWrapper.StatusCode,     // код ответа
+				statusCode,                      // код ответа
 				time.Since(start),               // время обработки запроса
 				r.UserAgent(),                   // user agent
 			),
