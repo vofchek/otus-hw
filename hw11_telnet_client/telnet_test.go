@@ -63,3 +63,26 @@ func TestTelnetClient(t *testing.T) {
 		wg.Wait()
 	})
 }
+
+func TestOperationOnClosedConnection(t *testing.T) {
+	l, err := net.Listen("tcp", "127.0.0.1:")
+	require.NoError(t, err)
+	defer func() { require.NoError(t, l.Close()) }()
+
+	in := &bytes.Buffer{}
+	out := &bytes.Buffer{}
+	client := NewTelnetClient(l.Addr().String(), timeout, io.NopCloser(in), out)
+
+	require.NoError(t, client.Connect())
+	require.NoError(t, client.Close())
+
+	require.ErrorIs(t, client.Send(), ErrClientClosed)
+	require.ErrorIs(t, client.Receive(), ErrClientClosed)
+}
+
+func TestCloseNotOpenedConnection(t *testing.T) {
+	in := &bytes.Buffer{}
+	out := &bytes.Buffer{}
+	client := NewTelnetClient("127.0.0.1:", timeout, io.NopCloser(in), out)
+	require.ErrorIs(t, client.Close(), ErrClientNotConnected)
+}
