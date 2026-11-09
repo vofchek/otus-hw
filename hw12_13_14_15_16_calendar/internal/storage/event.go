@@ -9,7 +9,7 @@ import (
 
 var (
 	ErrNotFound       = errors.New("event not found")
-	ErrUserIdRequired = errors.New("userId required")
+	ErrUserIDRequired = errors.New("userId required")
 	ErrOnDateRequired = errors.New("onDate required")
 	ErrDateBusy       = errors.New("date is busy")
 )
@@ -20,7 +20,7 @@ type Event struct {
 	OnDate           time.Time
 	Duration         time.Duration
 	Description      string
-	UserId           int
+	UserID           int
 	NotificateBefore time.Duration
 }
 

@@ -3,11 +3,12 @@ package internalhttp
 import (
 	"fmt"
 	"net/http"
+	"strings"
 	"time"
 )
 
 // инжектим Logger, поменял сигнатуру, чтобы не тащить конфиг через контекст.
-func loggingMiddleware(logg Logger, next http.Handler) http.Handler { //nolint:unused
+func loggingMiddleware(logg Logger, next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		start := time.Now()
 		decoratedWrapper := &ResponseWriter{
@@ -16,10 +17,12 @@ func loggingMiddleware(logg Logger, next http.Handler) http.Handler { //nolint:u
 
 		next.ServeHTTP(decoratedWrapper, r)
 
+		ip, _, _ := strings.Cut(r.RemoteAddr, ":")
+
 		logg.Info(
 			fmt.Sprintf(
 				"%s [%s] %s %s %s %d %d \"%s\"",
-				r.RemoteAddr,                    // IP клиента
+				ip,                              // IP клиента
 				time.Now().Format(time.RFC3339), // дата и время запроса
 				r.Method,                        // метод
 				r.RequestURI,                    // path
@@ -40,9 +43,11 @@ type ResponseWriter struct {
 func (w *ResponseWriter) Header() http.Header {
 	return w.w.Header()
 }
+
 func (w *ResponseWriter) Write(data []byte) (int, error) {
 	return w.w.Write(data)
 }
+
 func (w *ResponseWriter) WriteHeader(statusCode int) {
 	w.StatusCode = statusCode
 	w.w.WriteHeader(statusCode)

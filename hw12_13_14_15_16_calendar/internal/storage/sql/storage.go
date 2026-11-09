@@ -22,7 +22,7 @@ func (s *Storage) Connect(ctx context.Context) error {
 	return err
 }
 
-func (s *Storage) Close(ctx context.Context) error {
+func (s *Storage) Close(_ context.Context) error {
 	return s.db.Close()
 }
 
@@ -38,7 +38,7 @@ func (s *Storage) Add(ctx context.Context, event storage.Event) error {
 		event.OnDate,
 		event.Duration,
 		event.Description,
-		event.UserId,
+		event.UserID,
 		event.NotificateBefore,
 	)
 	return err
@@ -63,7 +63,7 @@ func (s *Storage) Update(ctx context.Context, event storage.Event) error {
 		event.OnDate,
 		event.Duration,
 		event.Description,
-		event.UserId,
+		event.UserID,
 		event.NotificateBefore,
 	)
 	return err
@@ -74,7 +74,7 @@ func (s *Storage) Delete(ctx context.Context, id string) error {
 	return err
 }
 
-func (s *Storage) GetById(ctx context.Context, id string) (*storage.Event, error) {
+func (s *Storage) GetByID(ctx context.Context, id string) (*storage.Event, error) {
 	var event *storage.Event
 	err := s.conn.QueryRowContext(ctx, "SELECT * FROM calendar_event WHERE id = $1", id).Scan(event)
 	return event, err

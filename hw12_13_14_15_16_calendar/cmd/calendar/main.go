@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"database/sql"
 	"errors"
 	"flag"
 	"fmt"
@@ -17,8 +18,6 @@ import (
 	internalhttp "github.com/vofchek/otus-hw/hw12_13_14_15_calendar/internal/server/http"
 	memorystorage "github.com/vofchek/otus-hw/hw12_13_14_15_calendar/internal/storage/memory"
 	sqlstorage "github.com/vofchek/otus-hw/hw12_13_14_15_calendar/internal/storage/sql"
-
-	"database/sql"
 )
 
 var configFile string
@@ -52,12 +51,7 @@ func main() {
 	server := internalhttp.NewServer(logg, calendar)
 
 	// передаём адрес для сервера(лучше передавать конфиг в server.Start)
-	ctx, cancel := signal.NotifyContext(
-		context.WithValue(
-			context.Background(),
-			internalhttp.ContextAddressKey,
-			net.JoinHostPort(config.HTTP.Host, config.HTTP.Port),
-		),
+	ctx, cancel := signal.NotifyContext(context.Background(),
 		syscall.SIGINT, syscall.SIGTERM, syscall.SIGHUP,
 	)
 	defer cancel()
@@ -75,7 +69,7 @@ func main() {
 
 	logg.Info("calendar is running...")
 
-	if err := server.Start(ctx); err != nil {
+	if err := server.Start(ctx, net.JoinHostPort(config.HTTP.Host, config.HTTP.Port)); err != nil {
 		logg.Error("failed to start http server: " + err.Error())
 		cancel()
 		os.Exit(1) //nolint:gocritic

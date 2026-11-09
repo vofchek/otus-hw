@@ -12,7 +12,7 @@ import (
 	"go.uber.org/goleak"
 )
 
-const testUserId = 1
+const testUserID = 1
 
 func TestMain(m *testing.M) {
 	goleak.VerifyTestMain(m)
@@ -21,20 +21,11 @@ func TestMain(m *testing.M) {
 func TestStorage(t *testing.T) {
 	t.Parallel()
 
-	t.Run("require UserId", func(t *testing.T) {
-		s := New()
-
-		event := storage.NewEvent()
-
-		err := s.Add(context.Background(), *event)
-		require.ErrorIs(t, err, storage.ErrUserIdRequired)
-	})
-
 	t.Run("add event", func(t *testing.T) {
 		s := New()
 
 		event := storage.NewEvent()
-		event.UserId = testUserId
+		event.UserID = testUserID
 		event.OnDate = time.Now()
 
 		err := s.Add(context.Background(), *event)
@@ -42,12 +33,12 @@ func TestStorage(t *testing.T) {
 
 		require.NotEmpty(t, event.ID, "event did not get id")
 
-		foundEvent, err := s.GetById(context.Background(), event.ID)
+		foundEvent, err := s.GetByID(context.Background(), event.ID)
 		require.NoError(t, err)
 		require.EqualValues(t, event, foundEvent)
 
 		event1 := storage.NewEvent()
-		event1.UserId = testUserId
+		event1.UserID = testUserID
 		require.ErrorIs(t, s.Add(context.Background(), *event1), storage.ErrOnDateRequired)
 	})
 
@@ -55,7 +46,7 @@ func TestStorage(t *testing.T) {
 		s := New()
 
 		event := storage.NewEvent()
-		event.UserId = testUserId
+		event.UserID = testUserID
 		event.Title = "A"
 		event.OnDate = time.Now()
 
@@ -67,7 +58,7 @@ func TestStorage(t *testing.T) {
 		err = s.Update(context.Background(), *event)
 		require.NoError(t, err)
 
-		foundEvent, err := s.GetById(context.Background(), event.ID)
+		foundEvent, err := s.GetByID(context.Background(), event.ID)
 		require.NoError(t, err)
 		require.EqualValues(t, event, foundEvent)
 	})
@@ -76,7 +67,7 @@ func TestStorage(t *testing.T) {
 		s := New()
 
 		event := storage.NewEvent()
-		event.UserId = testUserId
+		event.UserID = testUserID
 		event.OnDate = time.Now()
 		err := s.Add(context.Background(), *event)
 		require.NoError(t, err)
@@ -84,7 +75,7 @@ func TestStorage(t *testing.T) {
 		err = s.Delete(context.Background(), event.ID)
 		require.NoError(t, err)
 
-		_, err = s.GetById(context.Background(), event.ID)
+		_, err = s.GetByID(context.Background(), event.ID)
 		require.ErrorIs(t, err, storage.ErrNotFound)
 	})
 
@@ -93,7 +84,7 @@ func TestStorage(t *testing.T) {
 
 		for i := range 10 {
 			event := storage.NewEvent()
-			event.UserId = testUserId
+			event.UserID = testUserID
 			event.OnDate = time.Now().Add(time.Hour * time.Duration(i))
 			event.Duration = time.Minute * 30
 
@@ -122,14 +113,14 @@ func TestStorage(t *testing.T) {
 		e := storage.NewEvent()
 		e.OnDate = time.Now().Add(time.Hour * -12)
 		e.Duration = time.Hour * 24
-		e.UserId = 1
+		e.UserID = 1
 
 		require.NoError(t, s.Add(context.Background(), *e))
 
 		eNext := storage.NewEvent()
 		eNext.OnDate = time.Now().Add(time.Hour * -3)
 		eNext.Duration = time.Minute * 30
-		eNext.UserId = 1
+		eNext.UserID = 1
 
 		err := s.Add(context.Background(), *eNext)
 		require.NotEqual(t, e.ID, eNext.ID, "ids must be different")
@@ -142,7 +133,7 @@ func TestStorage(t *testing.T) {
 		e := storage.NewEvent()
 		e.OnDate = time.Now().Add(time.Hour * -12)
 		e.Duration = time.Hour * 24
-		e.UserId = 1
+		e.UserID = 1
 
 		require.NoError(t, s.Add(context.Background(), *e))
 
@@ -150,7 +141,7 @@ func TestStorage(t *testing.T) {
 		// через 3 дня
 		eNext.OnDate = time.Now().Add(time.Hour * 3 * 24)
 		eNext.Duration = time.Minute * 30
-		eNext.UserId = 1
+		eNext.UserID = 1
 
 		require.NoError(t, s.Add(context.Background(), *eNext))
 
@@ -165,21 +156,34 @@ func TestStorage(t *testing.T) {
 		e := storage.NewEvent()
 		e.OnDate = time.Now().Add(time.Hour * -12)
 		e.Duration = time.Hour * 24
-		e.UserId = 1
+		e.UserID = 1
 
 		require.NoError(t, s.Add(context.Background(), *e))
 
 		eNext := storage.NewEvent()
 		eNext.OnDate = time.Now().Add(time.Hour * -3)
 		eNext.Duration = time.Minute * 30
-		eNext.UserId = 2
+		eNext.UserID = 2
 
 		require.NotEqual(t, e.ID, eNext.ID, "ids must be different")
 		require.NoError(t, s.Add(context.Background(), *eNext))
 	})
 }
 
-func TestParallelOperations(t *testing.T) {
+func TestRequirements(t *testing.T) {
+	t.Parallel()
+
+	t.Run("require UserId", func(t *testing.T) {
+		s := New()
+
+		event := storage.NewEvent()
+
+		err := s.Add(context.Background(), *event)
+		require.ErrorIs(t, err, storage.ErrUserIDRequired)
+	})
+}
+
+func TestConcurrentOperations(t *testing.T) {
 	t.Parallel()
 
 	s := New()
@@ -193,7 +197,7 @@ func TestParallelOperations(t *testing.T) {
 			defer wg.Done()
 
 			event := storage.NewEvent()
-			event.UserId = testUserId + i
+			event.UserID = testUserID + i
 			event.OnDate = eventTime
 
 			err := s.Add(context.Background(), *event)
@@ -203,7 +207,7 @@ func TestParallelOperations(t *testing.T) {
 			s.Update(context.Background(), *event)
 
 			_, _ = s.GetAll(context.Background())
-			_, _ = s.GetById(context.Background(), event.ID)
+			_, _ = s.GetByID(context.Background(), event.ID)
 		}()
 	}
 	wg.Wait()

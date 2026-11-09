@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"net/http"
 	"os"
+	"time"
 )
 
 var (
@@ -37,27 +38,20 @@ func NewServer(logger Logger, app Application) *Server {
 	}
 }
 
-func (s *Server) Start(ctx context.Context) error {
-	address := ctx.Value(ContextAddressKey)
-	if address == nil {
-		return ErrConfigAddressEmpty
-	}
-	address, ok := address.(string)
-	if !ok {
-		return ErrConfigAddressIsNotString
-	}
-
+// address - хост + порт, чтобы не передавть эти данные через контекст.
+func (s *Server) Start(ctx context.Context, address string) error {
 	mux := http.NewServeMux()
 	mux.Handle("GET /", loggingMiddleware(s.Logger, http.HandlerFunc(indexHandler)))
 
 	s.server = &http.Server{
-		Addr:    address.(string),
-		Handler: mux,
+		Addr:              address,
+		Handler:           mux,
+		ReadHeaderTimeout: time.Second,
 	}
 
 	go func() {
 		err := s.server.ListenAndServe()
-		if err != nil {
+		if err != nil && err != http.ErrServerClosed {
 			s.Logger.Error(fmt.Sprintf("cant start server, err: %v", err))
 			os.Exit(1)
 		}
@@ -68,17 +62,20 @@ func (s *Server) Start(ctx context.Context) error {
 }
 
 func (s *Server) Stop(ctx context.Context) error {
+	s.Logger.Info("Shutting down")
 	err := s.server.Shutdown(ctx)
 	return err
 }
 
 func indexHandler(w http.ResponseWriter, r *http.Request) {
-	t, err := json.Marshal(`{success: true, payload: [1,2,3]}\n`)
+	_ = r.Context()
+	t, err := json.Marshal(`{success: true, payload: [1,2,3]}`)
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
 		w.Write([]byte("json decode failed"))
 		return
 	}
 
+	w.Header().Add("Content-Type", "application/json")
 	w.Write(t)
 }

@@ -21,7 +21,7 @@ type Storage interface {
 	Add(ctx context.Context, event storage.Event) error
 	Update(ctx context.Context, event storage.Event) error
 	Delete(ctx context.Context, id string) error
-	GetById(ctx context.Context, id string) (*storage.Event, error)
+	GetByID(ctx context.Context, id string) (*storage.Event, error)
 	GetAll(ctx context.Context) ([]storage.Event, error)
 }
 
@@ -33,7 +33,7 @@ func New(logger Logger, storage Storage) *App {
 }
 
 func (a *App) CreateEvent(ctx context.Context, id, title string) error {
-	// TODO
+	println(ctx, id, title)
 	return nil
 	// return a.storage.CreateEvent(storage.Event{ID: id, Title: title})
 }

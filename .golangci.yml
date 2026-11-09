@@ -17,6 +17,14 @@ linters-settings:
         allow:
           - $gostd
           - github.com/cheggaaa/pb
+          - github.com/spf13/viper
+          - github.com/google/uuid
+          - github.com/vofchek/otus-hw/hw12_13_14_15_calendar/internal/storage
+          - github.com/vofchek/otus-hw/hw12_13_14_15_calendar/internal/sql
+          - github.com/vofchek/otus-hw/hw12_13_14_15_calendar/internal/http
+          - github.com/vofchek/otus-hw/hw12_13_14_15_calendar/internal/app
+          - github.com/vofchek/otus-hw/hw12_13_14_15_calendar/internal/logger
+          - github.com/vofchek/otus-hw/hw12_13_14_15_calendar/internal/server/http
       Test:
         files:
           - $test
@@ -24,6 +32,7 @@ linters-settings:
           - $gostd
           - github.com/stretchr/testify
           - go.uber.org/goleak
+          - github.com/vofchek/otus-hw/hw12_13_14_15_calendar/internal/storage
 issues:
   exclude-rules:
     - path: _test\.go

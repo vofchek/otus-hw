@@ -8,10 +8,10 @@ import (
 	storage "github.com/vofchek/otus-hw/hw12_13_14_15_calendar/internal/storage"
 )
 
-// храним сериализованный мапу событий сериализованных в виде json
+// храним сериализованный мапу событий сериализованных в виде json.
 type Storage struct {
 	storage map[string]storage.Event
-	mu      sync.RWMutex //nolint:unused
+	mu      sync.RWMutex
 }
 
 func New() *Storage {
@@ -21,7 +21,7 @@ func New() *Storage {
 	}
 }
 
-func (s *Storage) Add(ctx context.Context, event storage.Event) error {
+func (s *Storage) Add(_ context.Context, event storage.Event) error {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
@@ -34,7 +34,7 @@ func (s *Storage) Add(ctx context.Context, event storage.Event) error {
 	return nil
 }
 
-func (s *Storage) Update(ctx context.Context, event storage.Event) error {
+func (s *Storage) Update(_ context.Context, event storage.Event) error {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
@@ -47,7 +47,7 @@ func (s *Storage) Update(ctx context.Context, event storage.Event) error {
 	return nil
 }
 
-func (s *Storage) Delete(ctx context.Context, id string) error {
+func (s *Storage) Delete(_ context.Context, id string) error {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
@@ -55,7 +55,7 @@ func (s *Storage) Delete(ctx context.Context, id string) error {
 	return nil
 }
 
-func (s *Storage) GetById(ctx context.Context, id string) (*storage.Event, error) {
+func (s *Storage) GetByID(_ context.Context, id string) (*storage.Event, error) {
 	s.mu.RLock()
 	defer s.mu.RUnlock()
 
@@ -67,7 +67,7 @@ func (s *Storage) GetById(ctx context.Context, id string) (*storage.Event, error
 	return &event, nil
 }
 
-func (s *Storage) GetAll(ctx context.Context) ([]storage.Event, error) {
+func (s *Storage) GetAll(_ context.Context) ([]storage.Event, error) {
 	s.mu.RLock()
 	defer s.mu.RUnlock()
 
@@ -85,8 +85,8 @@ func (s *Storage) assertEventValid(event *storage.Event) error {
 		return fmt.Errorf("event id is empty")
 	}
 
-	if event.UserId <= 0 {
-		return storage.ErrUserIdRequired
+	if event.UserID <= 0 {
+		return storage.ErrUserIDRequired
 	}
 
 	if event.OnDate.IsZero() {
@@ -94,7 +94,7 @@ func (s *Storage) assertEventValid(event *storage.Event) error {
 	}
 
 	for _, e := range s.storage {
-		if e.UserId != event.UserId || e.ID == event.ID {
+		if e.UserID != event.UserID || e.ID == event.ID {
 			continue
 		}
 

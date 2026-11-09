@@ -1,7 +1,4 @@
 -- +goose Up
-SELECT
-    'up SQL query';
-
 create table calendar_user (
     id serial primary key,
     name text
@@ -31,7 +28,5 @@ comment ON column calendar_event.notificate_before is 'количество се
 comment ON table calendar_event IS 'события';
 
 -- +goose Down
-SELECT
-    'down SQL query';
 drop table calendar_event;
 drop table calendar_user;
