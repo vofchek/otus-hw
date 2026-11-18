@@ -4,6 +4,8 @@ DOCKER_IMG="calendar:develop"
 GIT_HASH := $(shell git log --format="%h" -n 1)
 LDFLAGS := -X main.release="develop" -X main.buildDate=$(shell date -u +%Y-%m-%dT%H:%M:%S) -X main.gitHash=$(GIT_HASH)
 
+GOLANGCI_LINT_VERSION ?= v1.64.8
+
 #Postrges
 POSTGRES_USER ?= postgres
 POSTGRES_PASSWORD ?= password
@@ -63,7 +65,7 @@ test:
 	go test -race ./internal/...
 
 install-lint-deps:
-	(which golangci-lint > /dev/null) || curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh | sh -s -- -b $(shell go env GOPATH)/bin v1.63.4
+	go install github.com/golangci/golangci-lint/cmd/golangci-lint@$(GOLANGCI_LINT_VERSION)
 
 lint: install-lint-deps
 	golangci-lint run ./...
