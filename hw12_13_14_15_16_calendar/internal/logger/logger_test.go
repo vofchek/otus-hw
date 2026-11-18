@@ -1,8 +1,9 @@
 package logger
 
 import (
-	"bytes"
 	"encoding/json"
+	"fmt"
+	"os"
 	"strings"
 	"testing"
 
@@ -10,7 +11,7 @@ import (
 )
 
 func TestLogger(t *testing.T) {
-	buf := &bytes.Buffer{}
+	testDir := t.TempDir()
 
 	tests := []struct {
 		Level string
@@ -22,16 +23,22 @@ func TestLogger(t *testing.T) {
 
 	for _, test := range tests {
 		t.Run(test.Level, func(t *testing.T) {
-			l := New(test.Level, buf)
+			out := fmt.Sprintf("%s/calendar_log_%s.txt", testDir, test.Level)
+
+			l, err := New(test.Level, out)
+			assert.NoError(t, err)
 			test.LogFn(l, test.Level)
+
+			outData, err := os.ReadFile(out)
+			if err != nil {
+				t.Fatal("could not open out file")
+			}
 
 			var log struct {
 				Level string
 			}
-			assert.NoError(t, json.Unmarshal(buf.Bytes(), &log))
+			assert.NoError(t, json.Unmarshal(outData, &log))
 			assert.Equal(t, test.Level, strings.ToLower(log.Level))
-
-			buf.Reset()
 		})
 	}
 }

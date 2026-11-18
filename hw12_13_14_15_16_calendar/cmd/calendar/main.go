@@ -2,14 +2,12 @@ package main
 
 import (
 	"context"
-	"errors"
 	"flag"
-	"io"
+	"fmt"
 	"log"
 	"net"
 	"os"
 	"os/signal"
-	"path/filepath"
 	"syscall"
 	"time"
 
@@ -21,6 +19,8 @@ import (
 )
 
 var configFile string
+
+const codeError = 1
 
 func init() {
 	flag.StringVar(&configFile, "config", "/etc/calendar/config.toml", "Path to configuration file")
@@ -40,27 +40,30 @@ func main() {
 		log.Fatal("cant parse config, err: ", err)
 	}
 
-	writer := io.Writer(os.Stdout)
-	if path := config.Logger.Output; path != "" {
-		if err := os.MkdirAll(filepath.Dir(path), 0o755); err != nil {
-			log.Fatal("cant create log dir, err: ", err)
-		}
-
-		f, err := os.OpenFile(path, os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0o644)
-		if err != nil {
-			log.Fatal("cant open log file, err: ", err)
-		}
-		defer f.Close()
-
-		writer = io.MultiWriter(os.Stdout, f)
-	}
-
-	logg := logger.New(config.Logger.Level, writer)
-
-	storage, err := createStorage(config)
+	logg, err := logger.New(config.Logger.Level, config.Logger.Output)
 	if err != nil {
-		log.Fatal("cant create storage, err: ", err)
+		log.Fatal("cant create logger, err: ", err)
 	}
+
+	code, err := startAppServer(config, logg)
+	if code > 0 {
+		logg.Error(err.Error())
+		logg.Close()
+
+		os.Exit(code)
+	}
+
+	logg.Close()
+}
+
+// функция запуска приложения, создана из-за того что надо закрывать файл лога.
+// чтобы не дублировать logg.Close() в коде.
+func startAppServer(config Config, logg *logger.Logger) (int, error) {
+	storage, err := newStorage(config)
+	if err != nil {
+		return codeError, fmt.Errorf("cant create storage, err: %w", err)
+	}
+
 	calendar := app.New(logg, storage)
 
 	server := internalhttp.NewServer(logg, calendar)
@@ -72,22 +75,24 @@ func main() {
 	defer cancel()
 
 	if err := storage.Connect(ctx); err != nil {
-		logg.Error("cant connect storage, err: " + err.Error())
-		return
+		return codeError, fmt.Errorf("cant connect storage, err: %w", err)
 	}
 
+	// закрытие подключения к бд.
 	server.RegisterOnShutdown(func() {
-		ctx, cancel := context.WithTimeout(context.Background(), time.Second*3)
+		ctx, cancel := context.WithTimeout(context.Background(), time.Second)
 		defer cancel()
+
 		if err := storage.Close(ctx); err != nil {
 			logg.Error("cant disconnect storage, err: " + err.Error())
 		}
 	})
 
+	// shutdown.
 	go func() {
 		<-ctx.Done()
 
-		ctx, cancel := context.WithTimeout(context.Background(), time.Second*3)
+		ctx, cancel := context.WithTimeout(context.Background(), time.Second)
 		defer cancel()
 
 		if err := server.Stop(ctx); err != nil {
@@ -98,19 +103,23 @@ func main() {
 	logg.Info("calendar is running...")
 
 	if err := server.Start(ctx, net.JoinHostPort(config.HTTP.Host, config.HTTP.Port)); err != nil {
-		logg.Error("failed to start http server: " + err.Error())
-		cancel()
-		os.Exit(1) //nolint:gocritic
+		return codeError, fmt.Errorf("failed to start http server: %w", err)
 	}
+
+	return 0, nil
 }
 
-func createStorage(config Config) (app.Storage, error) {
+// фабрика хранилища. создаёт storage по коду в конфиге.
+func newStorage(config Config) (app.Storage, error) {
+	var storage app.Storage
 	switch config.Storage.Type {
 	case "memory":
-		return memorystorage.New(), nil
+		storage = memorystorage.New()
 	case "sql":
-		return sqlstorage.New(config.Storage.DSN), nil
+		storage = sqlstorage.New(config.Storage.DSN)
+	default:
+		return nil, fmt.Errorf("unknown storage type %s", config.Storage.Type)
 	}
 
-	return nil, errors.New("unknown storage type " + config.Storage.Type)
+	return storage, nil
 }

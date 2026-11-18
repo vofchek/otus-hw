@@ -5,7 +5,7 @@ import (
 	"errors"
 	"fmt"
 
-	"github.com/jackc/pgx/v5"
+	pgx "github.com/jackc/pgx/v5"
 	"github.com/vofchek/otus-hw/hw12_13_14_15_calendar/internal/storage"
 )
 

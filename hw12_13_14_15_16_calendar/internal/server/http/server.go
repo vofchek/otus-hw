@@ -5,7 +5,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
-	"os"
 	"time"
 )
 
@@ -41,20 +40,29 @@ func (s *Server) Start(ctx context.Context, address string) error {
 	s.server.Addr = address
 	s.server.Handler = mux
 
+	// для отлова ошибок прослушки сокета.
+	// используется, чтобы убрать os.Exit.
+	errCh := make(chan error)
+	defer close(errCh)
+
 	go func() {
+		s.Logger.Info(fmt.Sprintf("Listen on: %s", address))
 		err := s.server.ListenAndServe()
 		if err != nil && err != http.ErrServerClosed {
-			s.Logger.Error(fmt.Sprintf("cant start server, err: %v", err))
-			os.Exit(1)
+			errCh <- fmt.Errorf("cant start server, err: %w", err)
 		}
 	}()
 
-	<-ctx.Done()
-	return nil
+	select {
+	case <-ctx.Done():
+		return nil
+	case err := <-errCh:
+		return err
+	}
 }
 
 func (s *Server) Stop(ctx context.Context) error {
-	s.Logger.Info("Shutting down")
+	s.Logger.Info("Stopping server")
 	err := s.server.Shutdown(ctx)
 	return err
 }

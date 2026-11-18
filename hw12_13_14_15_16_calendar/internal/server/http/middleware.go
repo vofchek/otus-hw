@@ -24,8 +24,7 @@ func loggingMiddleware(logg Logger, next http.Handler) http.Handler {
 		}
 
 		logg.Info(
-			fmt.Sprintf(
-				"%s [%s] %s %s %s %d %d \\\"%s\\\"",
+			fmt.Sprintf(`%s [%s] %s %s %s %d %d %s`,
 				ip,                              // IP клиента
 				time.Now().Format(time.RFC3339), // дата и время запроса
 				r.Method,                        // метод
