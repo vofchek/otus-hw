@@ -26,12 +26,13 @@ func New(level string, filePath string) (*Logger, error) {
 			return nil, fmt.Errorf("cant create log dir, err: %w", err)
 		}
 
-		f, err := os.OpenFile(filePath, os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0o644)
+		var err error
+		logFile, err = os.OpenFile(filePath, os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0o644)
 		if err != nil {
 			return nil, fmt.Errorf("cant open log file, err: %w", err)
 		}
 
-		writer = io.MultiWriter(os.Stdout, f)
+		writer = io.MultiWriter(os.Stdout, logFile)
 	}
 
 	var slogLevel slog.Level

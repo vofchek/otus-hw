@@ -77,16 +77,15 @@ func startAppServer(config Config, logg *logger.Logger) (int, error) {
 	if err := storage.Connect(ctx); err != nil {
 		return codeError, fmt.Errorf("cant connect storage, err: %w", err)
 	}
-
 	// закрытие подключения к бд.
-	server.RegisterOnShutdown(func() {
+	defer func() {
 		ctx, cancel := context.WithTimeout(context.Background(), time.Second)
 		defer cancel()
 
 		if err := storage.Close(ctx); err != nil {
 			logg.Error("cant disconnect storage, err: " + err.Error())
 		}
-	})
+	}()
 
 	// shutdown.
 	go func() {

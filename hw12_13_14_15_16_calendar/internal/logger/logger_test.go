@@ -8,6 +8,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 func TestLogger(t *testing.T) {
@@ -27,6 +28,9 @@ func TestLogger(t *testing.T) {
 
 			l, err := New(test.Level, out)
 			assert.NoError(t, err)
+			t.Cleanup(func() {
+				require.NoError(t, l.Close())
+			})
 			test.LogFn(l, test.Level)
 
 			outData, err := os.ReadFile(out)

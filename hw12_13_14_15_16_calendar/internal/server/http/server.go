@@ -67,10 +67,6 @@ func (s *Server) Stop(ctx context.Context) error {
 	return err
 }
 
-func (s *Server) RegisterOnShutdown(f func()) {
-	s.server.RegisterOnShutdown(f)
-}
-
 func (s *Server) indexHandler(w http.ResponseWriter, r *http.Request) {
 	_ = r.Context()
 	t, err := json.Marshal(`{success: true, payload: [1,2,3]}`)
