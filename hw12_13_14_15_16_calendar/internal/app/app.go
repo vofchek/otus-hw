@@ -15,7 +15,6 @@ type App struct {
 type Logger interface {
 	Info(msg string)
 	Error(msg string)
-	Log(ctx context.Context, msg string, args ...any)
 }
 
 type Storage interface {

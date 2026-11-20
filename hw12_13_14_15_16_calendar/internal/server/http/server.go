@@ -42,7 +42,6 @@ func (s *Server) Start(ctx context.Context, address string) error {
 	// для отлова ошибок прослушки сокета.
 	// используется, чтобы убрать os.Exit.
 	errCh := make(chan error)
-	defer close(errCh)
 
 	go func() {
 		s.Logger.Info(fmt.Sprintf("Listen on: %s", address))
@@ -50,6 +49,7 @@ func (s *Server) Start(ctx context.Context, address string) error {
 		if err != nil && err != http.ErrServerClosed {
 			errCh <- fmt.Errorf("cant start server, err: %w", err)
 		}
+		close(errCh)
 	}()
 
 	select {
