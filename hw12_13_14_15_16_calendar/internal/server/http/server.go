@@ -2,30 +2,73 @@ package internalhttp
 
 import (
 	"context"
+	"fmt"
+	"net/http"
+	"time"
 )
 
-type Server struct { // TODO
+type Server struct {
+	Logger Logger
+	App    Application
+	server *http.Server
 }
 
-type Logger interface { // TODO
+type Logger interface {
+	Info(msg string)
+	Error(msg string)
 }
 
 type Application interface { // TODO
 }
 
 func NewServer(logger Logger, app Application) *Server {
-	return &Server{}
+	return &Server{
+		Logger: logger,
+		App:    app,
+		server: &http.Server{
+			ReadHeaderTimeout: time.Second,
+		},
+	}
 }
 
-func (s *Server) Start(ctx context.Context) error {
-	// TODO
-	<-ctx.Done()
-	return nil
+// address - хост + порт, чтобы не передавть эти данные через контекст.
+func (s *Server) Start(ctx context.Context, address string) error {
+	mux := http.NewServeMux()
+	mux.Handle("GET /", loggingMiddleware(s.Logger, http.HandlerFunc(s.indexHandler)))
+
+	s.server.Addr = address
+	s.server.Handler = mux
+
+	// для отлова ошибок прослушки сокета.
+	// используется, чтобы убрать os.Exit.
+	errCh := make(chan error)
+
+	go func() {
+		s.Logger.Info(fmt.Sprintf("Listen on: %s", address))
+		err := s.server.ListenAndServe()
+		if err != nil && err != http.ErrServerClosed {
+			errCh <- fmt.Errorf("cant start server, err: %w", err)
+		}
+		close(errCh)
+	}()
+
+	select {
+	case <-ctx.Done():
+		return nil
+	case err := <-errCh:
+		return err
+	}
 }
 
 func (s *Server) Stop(ctx context.Context) error {
-	// TODO
-	return nil
+	s.Logger.Info("Stopping server")
+	err := s.server.Shutdown(ctx)
+	return err
 }
 
-// TODO
+func (s *Server) indexHandler(w http.ResponseWriter, r *http.Request) {
+	_ = r.Context()
+
+	w.Header().Add("Content-Type", "application/json")
+	w.Write([]byte(`{success: true, payload: [1,2,3]}`))
+}
