@@ -71,7 +71,7 @@ func (l Logger) Error(msg string) {
 // level - строка с названием уровня логгирования, для уровней созданы констансты [infoLevel], [errorLevel].
 func (l Logger) Log(ctx context.Context, level string, msg string, args ...any) error {
 	var slogLevel slog.Level
-	if err := slogLevel.UnmarshalText([]byte(strings.TrimSpace(string(level)))); err != nil {
+	if err := slogLevel.UnmarshalText([]byte(strings.TrimSpace(level))); err != nil {
 		return fmt.Errorf("%w %q: %w", ErrInvalidLogLevel, level, err)
 	}
 
