@@ -2,6 +2,7 @@ package logger
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"io"
 	"log/slog"
@@ -9,6 +10,8 @@ import (
 	"path/filepath"
 	"strings"
 )
+
+var ErrInvalidLogLevel = errors.New("invalid log level")
 
 type Logger struct {
 	slog      *slog.Logger
@@ -19,6 +22,15 @@ type Logger struct {
 // создаёт объект логгера.
 // внутри создаётся файл, в который будут складываться сообщения.
 func New(level string, filePath string) (*Logger, error) {
+	var slogLevel slog.Level
+	if err := slogLevel.UnmarshalText([]byte(strings.TrimSpace(level))); err != nil {
+		return nil, fmt.Errorf("%w %q: %w", ErrInvalidLogLevel, level, err)
+	}
+
+	opts := &slog.HandlerOptions{
+		Level: slogLevel,
+	}
+
 	var logFile *os.File
 	writer := io.Writer(os.Stdout)
 	if filePath != "" {
@@ -33,15 +45,6 @@ func New(level string, filePath string) (*Logger, error) {
 		}
 
 		writer = io.MultiWriter(os.Stdout, logFile)
-	}
-
-	var slogLevel slog.Level
-	if err := slogLevel.UnmarshalText([]byte(strings.TrimSpace(level))); err != nil {
-		return nil, fmt.Errorf("invalid log level %q: %w", level, err)
-	}
-
-	opts := &slog.HandlerOptions{
-		Level: slogLevel,
 	}
 
 	return &Logger{
@@ -64,5 +67,8 @@ func (l Logger) Log(ctx context.Context, msg string, args ...any) {
 }
 
 func (l Logger) Close() error {
+	if l.logFile == nil {
+		return nil
+	}
 	return l.logFile.Close()
 }

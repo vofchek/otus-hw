@@ -10,8 +10,9 @@ import (
 )
 
 type Storage struct {
-	dsn  string
-	conn *pgx.Conn
+	dsn         string
+	conn        *pgx.Conn
+	isConnected bool
 }
 
 func New(dsn string) *Storage {
@@ -25,15 +26,26 @@ func (s *Storage) Connect(ctx context.Context) error {
 	}
 
 	if err := conn.Ping(ctx); err != nil {
+		conn.Close(ctx)
 		return err
 	}
 
 	s.conn = conn
+	s.isConnected = true
 	return nil
 }
 
 func (s *Storage) Close(ctx context.Context) error {
-	return s.conn.Close(ctx)
+	if s.conn == nil {
+		return nil
+	}
+
+	if err := s.conn.Close(ctx); err != nil {
+		return err
+	}
+
+	s.conn = nil
+	return nil
 }
 
 func (s *Storage) Add(ctx context.Context, event storage.Event) error {

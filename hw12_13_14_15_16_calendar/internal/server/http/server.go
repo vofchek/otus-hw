@@ -2,7 +2,6 @@ package internalhttp
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
 	"net/http"
 	"time"
@@ -69,13 +68,7 @@ func (s *Server) Stop(ctx context.Context) error {
 
 func (s *Server) indexHandler(w http.ResponseWriter, r *http.Request) {
 	_ = r.Context()
-	t, err := json.Marshal(`{success: true, payload: [1,2,3]}`)
-	if err != nil {
-		w.WriteHeader(http.StatusInternalServerError)
-		w.Write([]byte("json decode failed"))
-		return
-	}
 
 	w.Header().Add("Content-Type", "application/json")
-	w.Write(t)
+	w.Write([]byte(`{success: true, payload: [1,2,3]}`))
 }

@@ -105,7 +105,9 @@ func TestStorage(t *testing.T) {
 
 		require.Equal(t, 10, len(ids))
 	})
+}
 
+func TestErrors(t *testing.T) {
 	// пересечение событий для пользователя
 	t.Run("Add method generate ErrDateBusy for user", func(t *testing.T) {
 		s := New()
@@ -125,6 +127,25 @@ func TestStorage(t *testing.T) {
 		err := s.Add(context.Background(), *eNext)
 		require.NotEqual(t, e.ID, eNext.ID, "ids must be different")
 		require.ErrorIs(t, err, storage.ErrDateBusy)
+	})
+
+	t.Run("Update method generate ErrNotFound by not existing id", func(t *testing.T) {
+		s := New()
+
+		e := storage.NewEvent()
+		e.OnDate = time.Now().Add(time.Hour * -12)
+		e.Duration = time.Hour * 24
+		e.UserID = 1
+
+		err := s.Update(context.Background(), *e)
+		require.ErrorIs(t, err, storage.ErrNotFound)
+	})
+
+	t.Run("Delete method generate ErrNotFound by not existing id", func(t *testing.T) {
+		s := New()
+
+		err := s.Delete(context.Background(), "id-not-exists")
+		require.ErrorIs(t, err, storage.ErrNotFound)
 	})
 
 	t.Run("Update method generate ErrDateBusy for user", func(t *testing.T) {

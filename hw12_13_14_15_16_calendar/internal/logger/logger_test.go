@@ -45,4 +45,31 @@ func TestLogger(t *testing.T) {
 			assert.Equal(t, test.Level, strings.ToLower(log.Level))
 		})
 	}
+
+	t.Run("broken log level", func(t *testing.T) {
+		out := fmt.Sprintf("%s/calendar_log_%s.txt", testDir, "broken")
+		_, err := New("broken", out)
+		require.ErrorIs(t, err, ErrInvalidLogLevel)
+	})
+}
+
+func TestFilterTestLevel(t *testing.T) {
+	testDir := t.TempDir()
+
+	t.Run("filter test level", func(t *testing.T) {
+		testMsg := "this message must not be in log file"
+
+		out := fmt.Sprintf("%s/calendar_log_%s.txt", testDir, "error")
+		logg, err := New("error", out)
+		require.NoError(t, err)
+		t.Cleanup(func() {
+			require.NoError(t, logg.Close())
+		})
+		logg.Info(testMsg)
+		outData, err := os.ReadFile(out)
+		if err != nil {
+			t.Fatal("could not open out file")
+		}
+		require.Empty(t, outData, "log data must be empty")
+	})
 }

@@ -2,6 +2,7 @@ package app
 
 import (
 	"context"
+	"errors"
 
 	"github.com/vofchek/otus-hw/hw12_13_14_15_calendar/internal/storage"
 )
@@ -34,10 +35,10 @@ func New(logger Logger, storage Storage) *App {
 	}
 }
 
-func (a *App) CreateEvent(ctx context.Context, id, title string) error {
-	println(ctx, id, title)
-	return nil
-	// return a.storage.CreateEvent(storage.Event{ID: id, Title: title})
+func (a *App) CreateEvent(ctx context.Context, title string) error {
+	_ = ctx
+	_ = title
+	return errors.New("not implemented")
 }
 
 // TODO

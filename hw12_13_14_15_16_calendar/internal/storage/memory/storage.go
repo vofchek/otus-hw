@@ -8,7 +8,7 @@ import (
 	storage "github.com/vofchek/otus-hw/hw12_13_14_15_calendar/internal/storage"
 )
 
-// храним сериализованный мапу событий сериализованных в виде json.
+// храним мапу объектов событий.
 type Storage struct {
 	storage map[string]storage.Event
 	mu      sync.RWMutex
@@ -51,6 +51,11 @@ func (s *Storage) Update(_ context.Context, event storage.Event) error {
 		return err
 	}
 
+	_, exists := s.storage[event.ID]
+	if !exists {
+		return storage.ErrNotFound
+	}
+
 	s.storage[event.ID] = event
 	return nil
 }
@@ -58,6 +63,11 @@ func (s *Storage) Update(_ context.Context, event storage.Event) error {
 func (s *Storage) Delete(_ context.Context, id string) error {
 	s.mu.Lock()
 	defer s.mu.Unlock()
+
+	_, exists := s.storage[id]
+	if !exists {
+		return storage.ErrNotFound
+	}
 
 	delete(s.storage, id)
 	return nil

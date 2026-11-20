@@ -5,8 +5,6 @@ create table calendar_user (
 );
 comment ON table calendar_user IS 'пользователи';
 
-insert into calendar_user(id, name) values (1, 'main');
-
 create table calendar_event (
     id uuid primary key,
     title varchar(100),
