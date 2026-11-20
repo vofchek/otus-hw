@@ -12,18 +12,36 @@ import (
 )
 
 func TestLogger(t *testing.T) {
-	testDir := t.TempDir()
-
 	tests := []struct {
+		Case  string
 		Level string
 		LogFn func(logger *Logger, msg string)
 	}{
-		{"info", func(logger *Logger, msg string) { logger.Info(msg) }},
-		{"error", func(logger *Logger, msg string) { logger.Error(msg) }},
+		{
+			"info method",
+			"info",
+			func(logger *Logger, msg string) { logger.Info(msg) },
+		},
+		{
+			"error method",
+			"error",
+			func(logger *Logger, msg string) { logger.Error(msg) },
+		},
+		{
+			"log method with info level",
+			"info",
+			func(logger *Logger, msg string) { logger.Log(t.Context(), infoLevel, msg) },
+		},
+		{
+			"log method with error level",
+			"error",
+			func(logger *Logger, msg string) { logger.Log(t.Context(), errorLevel, msg) },
+		},
 	}
 
 	for _, test := range tests {
-		t.Run(test.Level, func(t *testing.T) {
+		t.Run(test.Case, func(t *testing.T) {
+			testDir := t.TempDir()
 			out := fmt.Sprintf("%s/calendar_log_%s.txt", testDir, test.Level)
 
 			l, err := New(test.Level, out)
@@ -41,12 +59,13 @@ func TestLogger(t *testing.T) {
 			var log struct {
 				Level string
 			}
-			assert.NoError(t, json.Unmarshal(outData, &log))
+			assert.NoError(t, json.Unmarshal(outData, &log), "bad json: %s", outData)
 			assert.Equal(t, test.Level, strings.ToLower(log.Level))
 		})
 	}
 
 	t.Run("broken log level", func(t *testing.T) {
+		testDir := t.TempDir()
 		out := fmt.Sprintf("%s/calendar_log_%s.txt", testDir, "broken")
 		_, err := New("broken", out)
 		require.ErrorIs(t, err, ErrInvalidLogLevel)

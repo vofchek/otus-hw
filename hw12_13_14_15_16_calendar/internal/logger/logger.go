@@ -13,6 +13,13 @@ import (
 
 var ErrInvalidLogLevel = errors.New("invalid log level")
 
+type Level string
+
+const (
+	infoLevel  = "info"
+	errorLevel = "error"
+)
+
 type Logger struct {
 	slog      *slog.Logger
 	slogLevel slog.Level
@@ -62,8 +69,15 @@ func (l Logger) Error(msg string) {
 	l.slog.Error(msg)
 }
 
-func (l Logger) Log(ctx context.Context, msg string, args ...any) {
-	l.slog.Log(ctx, l.slogLevel, msg, args...)
+func (l Logger) Log(ctx context.Context, level Level, msg string, args ...any) error {
+	var slogLevel slog.Level
+	if err := slogLevel.UnmarshalText([]byte(strings.TrimSpace(string(level)))); err != nil {
+		return fmt.Errorf("%w %q: %w", ErrInvalidLogLevel, level, err)
+	}
+
+	l.slog.Log(ctx, slogLevel, msg, args...)
+
+	return nil
 }
 
 func (l Logger) Close() error {
