@@ -14,6 +14,10 @@ import (
 const testUserID = 1
 
 func TestAdd(t *testing.T) {
+	if _, exists := os.LookupEnv("TEST_CALENDAR_DSN"); !exists {
+		t.Skip("no TEST_CALENDAR_DSN")
+	}
+
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second)
 	defer cancel()
 
@@ -47,6 +51,10 @@ func TestAdd(t *testing.T) {
 }
 
 func TestUpdate(t *testing.T) {
+	if _, exists := os.LookupEnv("TEST_CALENDAR_DSN"); !exists {
+		t.Skip("no TEST_CALENDAR_DSN")
+	}
+
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second)
 	defer cancel()
 
@@ -81,6 +89,10 @@ func TestUpdate(t *testing.T) {
 }
 
 func TestDelete(t *testing.T) {
+	if _, exists := os.LookupEnv("TEST_CALENDAR_DSN"); !exists {
+		t.Skip("no TEST_CALENDAR_DSN")
+	}
+
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second)
 	defer cancel()
 
@@ -107,6 +119,10 @@ func TestDelete(t *testing.T) {
 }
 
 func TestGetAll(t *testing.T) {
+	if _, exists := os.LookupEnv("TEST_CALENDAR_DSN"); !exists {
+		t.Skip("no TEST_CALENDAR_DSN")
+	}
+
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second)
 	defer cancel()
 
@@ -150,6 +166,10 @@ func TestGetAll(t *testing.T) {
 }
 
 func TestErrors(t *testing.T) {
+	if _, exists := os.LookupEnv("TEST_CALENDAR_DSN"); !exists {
+		t.Skip("no TEST_CALENDAR_DSN")
+	}
+
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second)
 	defer cancel()
 
@@ -237,7 +257,9 @@ func TestErrors(t *testing.T) {
 }
 
 func TestRequirements(t *testing.T) {
-	t.Parallel()
+	if _, exists := os.LookupEnv("TEST_CALENDAR_DSN"); !exists {
+		t.Skip("no TEST_CALENDAR_DSN")
+	}
 
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second)
 	defer cancel()
