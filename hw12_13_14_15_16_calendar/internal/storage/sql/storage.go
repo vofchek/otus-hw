@@ -75,6 +75,10 @@ func (s *Storage) Update(ctx context.Context, event storage.Event) error {
 		return err
 	}
 
+	if _, err := s.GetByID(ctx, event.ID); err != nil {
+		return err
+	}
+
 	_, err := s.conn.Exec(
 		ctx,
 		`
@@ -100,7 +104,16 @@ func (s *Storage) Update(ctx context.Context, event storage.Event) error {
 }
 
 func (s *Storage) Delete(ctx context.Context, id string) error {
+	if _, err := s.GetByID(ctx, id); err != nil {
+		return err
+	}
+
 	_, err := s.conn.Exec(ctx, "DELETE FROM calendar_event WHERE id = $1", id)
+	return err
+}
+
+func (s *Storage) DeleteAll(ctx context.Context) error {
+	_, err := s.conn.Exec(ctx, `DELETE FROM calendar_event`)
 	return err
 }
 

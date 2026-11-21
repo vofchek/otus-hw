@@ -18,6 +18,10 @@ GOOSE_DRIVER ?= postgres
 GOOSE_DBSTRING ?= postgres://$(POSTGRES_USER):$(POSTGRES_PASSWORD)@localhost:$(POSTGRES_PORT)/$(POSTGRES_DB)
 GOOSE_MIGRATION_DIR ?= ./migrations
 
+#TEST
+TEST_DB ?= backend_test
+TEST_DBSTRING ?= postgres://$(POSTGRES_USER):$(POSTGRES_PASSWORD)@localhost:$(POSTGRES_PORT)/$(TEST_DB)
+
 #Rabbit
 RABBIT_USER ?= rabbit
 RABBIT_PASSWORD ?= password
@@ -75,5 +79,19 @@ migrate-up:
 
 migrate-down:
 	GOOSE_DRIVER=$(GOOSE_DRIVER) GOOSE_DBSTRING=$(GOOSE_DBSTRING) GOOSE_MIGRATION_DIR=$(GOOSE_MIGRATION_DIR) goose down
+
+integration-tests:
+	@if docker exec $(POSTGRES_CONTAINER) psql -U $(POSTGRES_USER) $(TEST_DB) -c ''; then \
+		echo "test db exists"; \
+	else \
+   		docker exec $(POSTGRES_CONTAINER) psql -U $(POSTGRES_USER) -c 'create database $(TEST_DB)'; \
+	fi
+
+	GOOSE_DRIVER=$(GOOSE_DRIVER) GOOSE_DBSTRING=$(TEST_DBSTRING) GOOSE_MIGRATION_DIR=$(GOOSE_MIGRATION_DIR) goose reset
+	GOOSE_DRIVER=$(GOOSE_DRIVER) GOOSE_DBSTRING=$(TEST_DBSTRING) GOOSE_MIGRATION_DIR=$(GOOSE_MIGRATION_DIR) goose up
+
+	docker exec $(POSTGRES_CONTAINER) psql -U $(POSTGRES_USER) -d $(TEST_DB) -c "insert into calendar_user(id, name) values (1, 'first'), (2, 'second');"
+
+	TEST_CALENDAR_DSN=$(TEST_DBSTRING) go test -race ./internal/...
 
 .PHONY: build run build-img run-img version test lint

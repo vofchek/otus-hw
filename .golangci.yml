@@ -32,6 +32,7 @@ linters-settings:
           - github.com/stretchr/testify
           - go.uber.org/goleak
           - github.com/vofchek/otus-hw/hw12_13_14_15_calendar/internal/storage
+          - github.com/google/uuid
 issues:
   exclude-rules:
     - path: _test\.go
