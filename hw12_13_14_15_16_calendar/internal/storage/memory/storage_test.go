@@ -189,6 +189,25 @@ func TestErrors(t *testing.T) {
 		require.NotEqual(t, e.ID, eNext.ID, "ids must be different")
 		require.NoError(t, s.Add(context.Background(), *eNext))
 	})
+
+	t.Run("no ErrDateBusy for close dates", func(t *testing.T) {
+		s := New()
+
+		e := storage.NewEvent()
+		e.OnDate = time.Date(2025, 1, 1, 0, 0, 0, 0, time.UTC)
+		e.Duration = time.Hour * 24
+		e.UserID = testUserID
+
+		require.NoError(t, s.Add(context.Background(), *e))
+
+		eNext := storage.NewEvent()
+		eNext.OnDate = time.Date(2025, 1, 2, 0, 0, 0, 0, time.UTC)
+		eNext.Duration = time.Minute * 30
+		eNext.UserID = testUserID
+
+		require.NotEqual(t, e.ID, eNext.ID, "ids must be different")
+		require.NoError(t, s.Add(context.Background(), *eNext))
+	})
 }
 
 func TestRequirements(t *testing.T) {

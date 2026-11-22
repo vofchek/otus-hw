@@ -121,7 +121,7 @@ func (s *Storage) assertEventValid(event *storage.Event) error {
 		eventStart := event.OnDate
 		eventEnd := event.OnDate.Add(event.Duration)
 
-		intersected := eStart.Compare(eventEnd) <= 0 && eEnd.Compare(eventStart) >= 0
+		intersected := eStart.Compare(eventEnd) < 0 && eEnd.Compare(eventStart) > 0
 		if intersected {
 			return fmt.Errorf(
 				"%w, intersection with event: {ID: %s, OnDate: %s, Duration: %s}",

@@ -160,8 +160,8 @@ func (s *Storage) GetIntersected(ctx context.Context, event storage.Event) (*sto
 			from calendar_event
 			where
 				user_id = $1 AND
-				on_date <= $2 AND
-				on_date + duration >= $3 AND
+				on_date < $2 AND
+				on_date + duration > $3 AND
 				id <> $4
 		`,
 		event.UserID,

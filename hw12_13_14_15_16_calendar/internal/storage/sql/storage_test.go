@@ -11,7 +11,10 @@ import (
 	"github.com/vofchek/otus-hw/hw12_13_14_15_calendar/internal/storage"
 )
 
-const testUserID = 1
+const (
+	testUserID      = 1
+	otherTestUserID = 2
+)
 
 func TestAdd(t *testing.T) {
 	if _, exists := os.LookupEnv("TEST_CALENDAR_DSN"); !exists {
@@ -241,17 +244,36 @@ func TestErrors(t *testing.T) {
 		e := storage.NewEvent()
 		e.OnDate = time.Now().Add(time.Hour * -12)
 		e.Duration = time.Hour * 24
-		e.UserID = 1
+		e.UserID = testUserID
 
 		require.NoError(t, s.Add(ctx, *e))
 
 		eNext := storage.NewEvent()
 		eNext.OnDate = time.Now().Add(time.Hour * -3)
 		eNext.Duration = time.Minute * 30
-		eNext.UserID = 2
+		eNext.UserID = otherTestUserID
 
 		require.NotEqual(t, e.ID, eNext.ID, "ids must be different")
 		require.NoError(t, s.Add(ctx, *eNext))
+		require.NoError(t, s.DeleteAll(ctx))
+	})
+
+	t.Run("no ErrDateBusy for close dates", func(t *testing.T) {
+		e := storage.NewEvent()
+		e.OnDate = time.Date(2025, 1, 1, 0, 0, 0, 0, time.UTC)
+		e.Duration = time.Hour * 24
+		e.UserID = testUserID
+
+		require.NoError(t, s.Add(context.Background(), *e))
+
+		eNext := storage.NewEvent()
+		eNext.OnDate = time.Date(2025, 1, 2, 0, 0, 0, 0, time.UTC)
+		eNext.Duration = time.Minute * 30
+		eNext.UserID = testUserID
+
+		require.NotEqual(t, e.ID, eNext.ID, "ids must be different")
+		require.NoError(t, s.Add(context.Background(), *eNext))
+
 		require.NoError(t, s.DeleteAll(ctx))
 	})
 }
