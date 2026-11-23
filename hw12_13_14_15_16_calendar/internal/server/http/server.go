@@ -36,9 +36,9 @@ type Application interface {
 
 	DeleteEvent(ctx context.Context, id string) error
 
-	GetOnDate(ctx context.Context, date time.Time) ([]storage.Event, error)
-	GetOnWeek(ctx context.Context, date time.Time) ([]storage.Event, error)
-	GetOnMonth(ctx context.Context, date time.Time) ([]storage.Event, error)
+	GetOnDate(ctx context.Context, userID int, date time.Time) ([]storage.Event, error)
+	GetOnWeek(ctx context.Context, userID int, date time.Time) ([]storage.Event, error)
+	GetOnMonth(ctx context.Context, userID int, date time.Time) ([]storage.Event, error)
 }
 
 func NewServer(logger Logger, app Application) *Server {
@@ -234,7 +234,7 @@ func (s *Server) getOnDateHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	events, err := s.App.GetOnDate(r.Context(), params.Date)
+	events, err := s.App.GetOnDate(r.Context(), userID, params.Date)
 	writeResponse(w, events, err)
 }
 
@@ -253,7 +253,7 @@ func (s *Server) getOnWeekHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	events, err := s.App.GetOnWeek(r.Context(), params.Date)
+	events, err := s.App.GetOnWeek(r.Context(), userID, params.Date)
 	writeResponse(w, events, err)
 }
 
@@ -272,6 +272,6 @@ func (s *Server) getOnMonthHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	events, err := s.App.GetOnMonth(r.Context(), params.Date)
+	events, err := s.App.GetOnMonth(r.Context(), userID, params.Date)
 	writeResponse(w, events, err)
 }

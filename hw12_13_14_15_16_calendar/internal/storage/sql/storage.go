@@ -190,16 +190,20 @@ func (s *Storage) GetIntersected(ctx context.Context, event storage.Event) (*sto
 	return &eventIntersected, nil
 }
 
-func (s *Storage) GetByPeriod(ctx context.Context, from, to time.Time) ([]storage.Event, error) {
+func (s *Storage) GetByPeriod(ctx context.Context, userId int, from, to time.Time) ([]storage.Event, error) {
 	rows, err := s.conn.Query(ctx,
 		`
 			SELECT * 
 			FROM calendar_event 
-			WHERE on_date >= $1 AND on_date <= $2
+			WHERE 
+				on_date >= $1 AND 
+				on_date <= $2 AND
+				user_id = $3
 			ORDER BY on_date ASC
 		`,
 		from,
 		to,
+		userId,
 	)
 	if err != nil {
 		return nil, err

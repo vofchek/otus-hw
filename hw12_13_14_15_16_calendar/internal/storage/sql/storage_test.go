@@ -349,7 +349,7 @@ func TestGetByPeriod(t *testing.T) {
 	require.NoError(t, err)
 	require.NotEmpty(t, event1.ID, "event did not get id")
 
-	found, err := s.GetByPeriod(ctx, time.Now(), time.Now().Add(time.Hour*2))
+	found, err := s.GetByPeriod(ctx, testUserID, time.Now(), time.Now().Add(time.Hour*2))
 	require.NoError(t, err)
 	for _, e := range found {
 		require.Equal(t, event.ID, e.ID)

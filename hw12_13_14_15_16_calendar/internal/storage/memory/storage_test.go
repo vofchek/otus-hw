@@ -130,6 +130,7 @@ func TestStorage(t *testing.T) {
 
 		found, err := s.GetByPeriod(
 			context.Background(),
+			testUserID,
 			time.Now().Add(-1*time.Hour),
 			time.Now().Add(time.Hour),
 		)

@@ -25,7 +25,7 @@ type Storage interface {
 	Delete(ctx context.Context, id string) error
 	GetByID(ctx context.Context, id string) (*storage.Event, error)
 	GetAll(ctx context.Context) ([]storage.Event, error)
-	GetByPeriod(ctx context.Context, from, to time.Time) ([]storage.Event, error)
+	GetByPeriod(ctx context.Context, userID int, from, to time.Time) ([]storage.Event, error)
 }
 
 func New(logger Logger, storage Storage) *App {
@@ -66,19 +66,19 @@ func (a *App) DeleteEvent(ctx context.Context, id string) error {
 	return a.storage.Delete(ctx, id)
 }
 
-func (a *App) GetOnDate(ctx context.Context, date time.Time) ([]storage.Event, error) {
-	return a.storage.GetByPeriod(ctx, date, date)
+func (a *App) GetOnDate(ctx context.Context, userID int, date time.Time) ([]storage.Event, error) {
+	return a.storage.GetByPeriod(ctx, userID, date, date)
 }
 
-func (a *App) GetOnWeek(ctx context.Context, date time.Time) ([]storage.Event, error) {
+func (a *App) GetOnWeek(ctx context.Context, userID int, date time.Time) ([]storage.Event, error) {
 	offset := (int(date.Weekday()) + 6) % 7
 	from := date.AddDate(0, 0, -offset)
 	to := date.AddDate(0, 0, 7-offset)
-	return a.storage.GetByPeriod(ctx, from, to)
+	return a.storage.GetByPeriod(ctx, userID, from, to)
 }
 
-func (a *App) GetOnMonth(ctx context.Context, date time.Time) ([]storage.Event, error) {
+func (a *App) GetOnMonth(ctx context.Context, userID int, date time.Time) ([]storage.Event, error) {
 	from := time.Date(date.Year(), date.Month(), 1, 0, 0, 0, 0, time.UTC)
 	to := from.AddDate(0, 1, -1)
-	return a.storage.GetByPeriod(ctx, from, to)
+	return a.storage.GetByPeriod(ctx, userID, from, to)
 }
