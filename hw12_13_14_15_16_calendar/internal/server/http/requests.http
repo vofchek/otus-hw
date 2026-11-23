@@ -1,0 +1,63 @@
+@host = http://127.0.0.1:7000
+
+# После выполнения create можно подставить id из ответа.
+# GoLand: раскомментируйте строку ниже вместо фиктивного id.
+# @eventId = {{create.response.body.id}}
+@eventId = 01a20997-5ee5-7575-9e93-743ccd487162
+
+### Проверка сервера
+GET {{host}}/
+
+### Создать событие
+# duration указывается в секундах: 100 = 1 минута 40 секунд.
+POST {{host}}/create
+Content-Type: application/json
+
+{
+  "title": "example",
+  "onDate": "2026-11-21T11:00:00.0Z",
+  "duration": 100
+}
+
+### Обновить событие
+POST {{host}}/update
+Content-Type: application/json
+
+{
+  "id": "{{eventId}}",
+  "title": "example updated",
+  "onDate": "2026-11-22T00:00:00.0Z",
+  "duration": 120
+}
+
+### Удалить событие
+POST {{host}}/delete
+Content-Type: application/json
+
+{
+  "id": "{{eventId}}"
+}
+
+### События на дату
+GET {{host}}/get-on-date
+Content-Type: application/json
+
+{
+  "date": "2026-11-22T00:00:00.0Z"
+}
+
+### События за неделю
+GET {{host}}/get-on-week
+Content-Type: application/json
+
+{
+  "date": "2026-11-22T00:00:00.0Z"
+}
+
+### События за месяц
+GET {{host}}/get-on-month
+Content-Type: application/json
+
+{
+  "date": "2026-11-22T00:00:00.0Z"
+}

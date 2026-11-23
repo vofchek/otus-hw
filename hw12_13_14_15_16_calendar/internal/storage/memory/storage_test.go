@@ -27,6 +27,7 @@ func TestStorage(t *testing.T) {
 		event := storage.NewEvent()
 		event.UserID = testUserID
 		event.OnDate = time.Now()
+		event.Duration = time.Second * 30
 
 		err := s.Add(context.Background(), *event)
 		require.NoError(t, err)
@@ -49,6 +50,7 @@ func TestStorage(t *testing.T) {
 		event.UserID = testUserID
 		event.Title = "A"
 		event.OnDate = time.Now()
+		event.Duration = time.Second * 30
 
 		err := s.Add(context.Background(), *event)
 		require.NoError(t, err)
@@ -69,6 +71,7 @@ func TestStorage(t *testing.T) {
 		event := storage.NewEvent()
 		event.UserID = testUserID
 		event.OnDate = time.Now()
+		event.Duration = time.Second * 30
 		err := s.Add(context.Background(), *event)
 		require.NoError(t, err)
 
@@ -104,6 +107,38 @@ func TestStorage(t *testing.T) {
 		}
 
 		require.Equal(t, 10, len(ids))
+	})
+
+	t.Run("get event in period", func(t *testing.T) {
+		var err error
+
+		s := New()
+
+		event := storage.NewEvent()
+		event.UserID = testUserID
+		event.OnDate = time.Now()
+		event.Duration = time.Second * 30
+		err = s.Add(context.Background(), *event)
+		require.NoError(t, err)
+
+		event1 := storage.NewEvent()
+		event1.UserID = testUserID
+		event1.OnDate = time.Now().Add(time.Hour * 12)
+		event1.Duration = time.Second * 30
+		err = s.Add(context.Background(), *event1)
+		require.NoError(t, err)
+
+		found, err := s.GetByPeriod(
+			context.Background(),
+			time.Now().Add(-1*time.Hour),
+			time.Now().Add(time.Hour),
+		)
+		require.NoError(t, err)
+
+		require.Equal(t, 1, len(found))
+		for _, e := range found {
+			require.Equal(t, event.ID, e.ID, "found wrong event")
+		}
 	})
 }
 
@@ -221,6 +256,17 @@ func TestRequirements(t *testing.T) {
 		err := s.Add(context.Background(), *event)
 		require.ErrorIs(t, err, storage.ErrUserIDRequired)
 	})
+
+	t.Run("require Duration", func(t *testing.T) {
+		s := New()
+
+		event := storage.NewEvent()
+		event.UserID = testUserID
+		event.OnDate = time.Now()
+
+		err := s.Add(context.Background(), *event)
+		require.ErrorIs(t, err, storage.ErrDurationRequired)
+	})
 }
 
 func TestConcurrentOperations(t *testing.T) {
@@ -239,6 +285,7 @@ func TestConcurrentOperations(t *testing.T) {
 			event := storage.NewEvent()
 			event.UserID = testUserID + i
 			event.OnDate = eventTime
+			event.Duration = time.Second * 30
 
 			err := s.Add(context.Background(), *event)
 			assert.NoError(t, err)
