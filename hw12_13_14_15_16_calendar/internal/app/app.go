@@ -36,19 +36,33 @@ func New(logger Logger, storage Storage) *App {
 }
 
 func (a *App) CreateEvent(
-	ctx context.Context, userID int, title string, onDate time.Time, duration time.Duration,
+	ctx context.Context,
+	userID int,
+	title string,
+	onDate time.Time,
+	duration time.Duration,
+	description string,
+	notificateBefore time.Duration,
 ) (storage.Event, error) {
 	event := storage.NewEvent()
 	event.UserID = userID
 	event.Title = title
 	event.OnDate = onDate
 	event.Duration = duration
+	event.Description = description
+	event.NotificateBefore = notificateBefore
 
 	return *event, a.storage.Add(ctx, *event)
 }
 
 func (a *App) UpdateEvent(
-	ctx context.Context, id string, title string, onDate time.Time, duration time.Duration,
+	ctx context.Context,
+	id string,
+	title string,
+	onDate time.Time,
+	duration time.Duration,
+	description string,
+	notificateBefore time.Duration,
 ) (storage.Event, error) {
 	event, err := a.storage.GetByID(ctx, id)
 	if err != nil {
@@ -58,6 +72,8 @@ func (a *App) UpdateEvent(
 	event.Title = title
 	event.OnDate = onDate
 	event.Duration = duration
+	event.Description = description
+	event.NotificateBefore = notificateBefore
 
 	return *event, a.storage.Update(ctx, *event)
 }

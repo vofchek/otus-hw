@@ -100,13 +100,13 @@ func (s *Storage) GetAll(_ context.Context) ([]storage.Event, error) {
 	return r, nil
 }
 
-func (s *Storage) GetByPeriod(_ context.Context, userId int, from, to time.Time) ([]storage.Event, error) {
+func (s *Storage) GetByPeriod(_ context.Context, userID int, from, to time.Time) ([]storage.Event, error) {
 	s.mu.RLock()
 	defer s.mu.RUnlock()
 
 	r := make([]storage.Event, 0)
 	for _, v := range s.storage {
-		if v.OnDate.After(from) && v.OnDate.Before(to) && v.UserID == userId {
+		if !v.OnDate.Before(from) && !v.OnDate.After(to) && v.UserID == userID {
 			r = append(r, v)
 		}
 	}

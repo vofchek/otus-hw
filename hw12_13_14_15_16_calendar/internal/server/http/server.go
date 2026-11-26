@@ -27,11 +27,23 @@ type Logger interface {
 
 type Application interface {
 	CreateEvent(
-		ctx context.Context, userID int, title string, onDate time.Time, duration time.Duration,
+		ctx context.Context,
+		userID int,
+		title string,
+		onDate time.Time,
+		duration time.Duration,
+		description string,
+		notificateBefore time.Duration,
 	) (storage.Event, error)
 
 	UpdateEvent(
-		ctx context.Context, id string, title string, onDate time.Time, duration time.Duration,
+		ctx context.Context,
+		id string,
+		title string,
+		onDate time.Time,
+		duration time.Duration,
+		description string,
+		notificateBefore time.Duration,
 	) (storage.Event, error)
 
 	DeleteEvent(ctx context.Context, id string) error
@@ -52,7 +64,7 @@ func NewServer(logger Logger, app Application) *Server {
 }
 
 // address - хост + порт, чтобы не передавть эти данные через контекст.
-func (s *Server) Start(ctx context.Context, address string) error {
+func (s *Server) routes() http.Handler {
 	mux := http.NewServeMux()
 	mux.Handle("GET /", loggingMiddleware(s.Logger, http.HandlerFunc(s.indexHandler)))
 	mux.Handle("POST /create", loggingMiddleware(s.Logger, http.HandlerFunc(s.createHandler)))
@@ -62,8 +74,12 @@ func (s *Server) Start(ctx context.Context, address string) error {
 	mux.Handle("GET /get-on-week", loggingMiddleware(s.Logger, http.HandlerFunc(s.getOnWeekHandler)))
 	mux.Handle("GET /get-on-month", loggingMiddleware(s.Logger, http.HandlerFunc(s.getOnMonthHandler)))
 
+	return mux
+}
+
+func (s *Server) Start(ctx context.Context, address string) error {
 	s.server.Addr = address
-	s.server.Handler = mux
+	s.server.Handler = s.routes()
 
 	// для отлова ошибок прослушки сокета.
 	// используется, чтобы убрать os.Exit.
@@ -128,9 +144,11 @@ func writeResponse(w http.ResponseWriter, data any, err error) {
 
 // обработчик создания.
 type CreateRequest struct {
-	Title    string    `json:"title"`
-	OnDate   time.Time `json:"onDate"`
-	Duration int64     `json:"duration"`
+	Title            string        `json:"title"`
+	OnDate           time.Time     `json:"onDate"`
+	Duration         int64         `json:"duration"`
+	Description      string        `json:"description"`
+	NotificateBefore time.Duration `json:"notificateBefore"`
 }
 
 func (s *Server) createHandler(w http.ResponseWriter, r *http.Request) {
@@ -156,6 +174,8 @@ func (s *Server) createHandler(w http.ResponseWriter, r *http.Request) {
 		params.Title,
 		params.OnDate,
 		time.Duration(params.Duration*int64(time.Second)),
+		params.Description,
+		params.NotificateBefore,
 	)
 	writeResponse(w, e, err)
 }
@@ -186,6 +206,8 @@ func (s *Server) updateHandler(w http.ResponseWriter, r *http.Request) {
 		params.Title,
 		params.OnDate,
 		time.Duration(params.Duration*int64(time.Second)),
+		params.Description,
+		params.NotificateBefore,
 	)
 	writeResponse(w, e, err)
 }

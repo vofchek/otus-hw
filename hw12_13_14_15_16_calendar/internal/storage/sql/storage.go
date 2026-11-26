@@ -190,7 +190,7 @@ func (s *Storage) GetIntersected(ctx context.Context, event storage.Event) (*sto
 	return &eventIntersected, nil
 }
 
-func (s *Storage) GetByPeriod(ctx context.Context, userId int, from, to time.Time) ([]storage.Event, error) {
+func (s *Storage) GetByPeriod(ctx context.Context, userID int, from, to time.Time) ([]storage.Event, error) {
 	rows, err := s.conn.Query(ctx,
 		`
 			SELECT * 
@@ -203,7 +203,7 @@ func (s *Storage) GetByPeriod(ctx context.Context, userId int, from, to time.Tim
 		`,
 		from,
 		to,
-		userId,
+		userID,
 	)
 	if err != nil {
 		return nil, err

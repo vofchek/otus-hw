@@ -13,6 +13,7 @@ import (
 
 	"github.com/vofchek/otus-hw/hw12_13_14_15_calendar/internal/app"
 	"github.com/vofchek/otus-hw/hw12_13_14_15_calendar/internal/logger"
+	internalgrpc "github.com/vofchek/otus-hw/hw12_13_14_15_calendar/internal/server/grpc"
 	internalhttp "github.com/vofchek/otus-hw/hw12_13_14_15_calendar/internal/server/http"
 	memorystorage "github.com/vofchek/otus-hw/hw12_13_14_15_calendar/internal/storage/memory"
 	sqlstorage "github.com/vofchek/otus-hw/hw12_13_14_15_calendar/internal/storage/sql"
@@ -24,6 +25,11 @@ const codeError = 1
 
 func init() {
 	flag.StringVar(&configFile, "config", "/etc/calendar/config.toml", "Path to configuration file")
+}
+
+type Server interface {
+	Start(ctx context.Context, address string) error
+	Stop(ctx context.Context) error
 }
 
 func main() {
@@ -66,7 +72,15 @@ func startAppServer(config Config, logg *logger.Logger) (int, error) {
 
 	calendar := app.New(logg, storage)
 
-	server := internalhttp.NewServer(logg, calendar)
+	var server Server
+	switch config.Server.Type {
+	case "http":
+		server = internalhttp.NewServer(logg, calendar)
+	case "grpc":
+		server = internalgrpc.NewServer(logg, calendar)
+	default:
+		return codeError, fmt.Errorf("cant create server, unknown server type %s", config.Server.Type)
+	}
 
 	// передаём адрес для сервера(лучше передавать конфиг в server.Start)
 	ctx, cancel := signal.NotifyContext(context.Background(),
@@ -101,7 +115,7 @@ func startAppServer(config Config, logg *logger.Logger) (int, error) {
 
 	logg.Info("calendar is running...")
 
-	if err := server.Start(ctx, net.JoinHostPort(config.HTTP.Host, config.HTTP.Port)); err != nil {
+	if err := server.Start(ctx, net.JoinHostPort(config.Server.Host, config.Server.Port)); err != nil {
 		return codeError, fmt.Errorf("failed to start http server: %w", err)
 	}
 

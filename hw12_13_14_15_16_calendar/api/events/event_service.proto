@@ -1,0 +1,81 @@
+syntax = "proto3";
+
+package events;
+option go_package = "./;pb";
+
+import "google/protobuf/timestamp.proto";
+
+service EventsService {
+    rpc Create (CreateRequest) returns (CreateResponse) {}
+    rpc Update (UpdateRequest) returns (UpdateResponse) {}
+    rpc Delete (DeleteRequest) returns (DeleteResponse) {}
+    rpc GetOnDate (GetOnDateRequest) returns (GetOnDateResponse) {}
+    rpc GetOnWeek (GetOnWeekRequest) returns (GetOnWeekResponse) {}
+    rpc GetOnMonth (GetOnMonthRequest) returns (GetOnMonthResponse) {}
+}
+
+message CreateRequest {
+    string title = 1;
+    google.protobuf.Timestamp on_date = 2;
+    int64 duration = 3;
+    string description = 4;
+    int64 notificate_before = 5;
+}
+
+message CreateResponse {
+    Event data = 1;
+}
+
+message UpdateRequest {
+    string id = 1;
+    string title = 2;
+    google.protobuf.Timestamp on_date = 3;
+    int64 duration = 4;
+    string description = 5;
+    int64 notificate_before = 6;
+}
+
+message UpdateResponse {
+    Event data = 1;
+}
+
+message DeleteRequest {
+    string id = 1;
+}
+
+message DeleteResponse {
+}
+
+message GetOnDateRequest {
+    google.protobuf.Timestamp date = 1;
+}
+
+message GetOnDateResponse {
+    repeated Event data = 1;
+}
+
+message GetOnWeekRequest {
+    google.protobuf.Timestamp date = 1;
+}
+
+message GetOnWeekResponse {
+    repeated Event data = 1;
+}
+
+message GetOnMonthRequest {
+    google.protobuf.Timestamp date = 1;
+}
+
+message GetOnMonthResponse {
+    repeated Event data = 1;
+}
+
+message Event {
+    string id = 1;
+	string title = 2;
+	google.protobuf.Timestamp on_date = 3;
+	int64 duration = 4;
+	string description = 5;
+	int64 user_id = 6;
+	int64 notificate_before = 7;
+}
