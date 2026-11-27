@@ -6,6 +6,7 @@ storage:
   type: "sql"
   dsn: "host=localhost port=5435 user=postgres password=password dbname=backend sslmode=disable"
 
-http:
+server:
+  type: grpc
   host: "127.0.0.1"
   port: "7000"

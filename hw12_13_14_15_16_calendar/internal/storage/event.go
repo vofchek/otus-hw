@@ -8,20 +8,21 @@ import (
 )
 
 var (
-	ErrNotFound       = errors.New("event not found")
-	ErrUserIDRequired = errors.New("userId required")
-	ErrOnDateRequired = errors.New("onDate required")
-	ErrDateBusy       = errors.New("date is busy")
+	ErrNotFound         = errors.New("event not found")
+	ErrUserIDRequired   = errors.New("userId required")
+	ErrOnDateRequired   = errors.New("onDate required")
+	ErrDateBusy         = errors.New("date is busy")
+	ErrDurationRequired = errors.New("duration required")
 )
 
 type Event struct {
-	ID               string        `db:"id"`
-	Title            string        `db:"title"`
-	OnDate           time.Time     `db:"on_date"`
-	Duration         time.Duration `db:"duration"`
-	Description      string        `db:"description"`
-	UserID           int           `db:"user_id"`
-	NotificateBefore time.Duration `db:"notificate_before"`
+	ID               string        `db:"id" json:"id"`
+	Title            string        `db:"title" json:"title"`
+	OnDate           time.Time     `db:"on_date" json:"onDate"`
+	Duration         time.Duration `db:"duration" json:"duration"`
+	Description      string        `db:"description" json:"description"`
+	UserID           int           `db:"user_id" json:"userId"`
+	NotificateBefore time.Duration `db:"notificate_before" json:"notificateBefore"`
 }
 
 func NewEvent() *Event {

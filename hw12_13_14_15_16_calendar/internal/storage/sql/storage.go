@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"time"
 
 	pgx "github.com/jackc/pgx/v5"
 	"github.com/vofchek/otus-hw/hw12_13_14_15_calendar/internal/storage"
@@ -189,6 +190,28 @@ func (s *Storage) GetIntersected(ctx context.Context, event storage.Event) (*sto
 	return &eventIntersected, nil
 }
 
+func (s *Storage) GetByPeriod(ctx context.Context, userID int, from, to time.Time) ([]storage.Event, error) {
+	rows, err := s.conn.Query(ctx,
+		`
+			SELECT * 
+			FROM calendar_event 
+			WHERE 
+				on_date >= $1 AND 
+				on_date <= $2 AND
+				user_id = $3
+			ORDER BY on_date ASC
+		`,
+		from,
+		to,
+		userID,
+	)
+	if err != nil {
+		return nil, err
+	}
+
+	return pgx.CollectRows(rows, pgx.RowToStructByName[storage.Event])
+}
+
 func (s *Storage) assertEventValid(ctx context.Context, event storage.Event) error {
 	if len(event.ID) == 0 {
 		return fmt.Errorf("event id is empty")
@@ -200,6 +223,10 @@ func (s *Storage) assertEventValid(ctx context.Context, event storage.Event) err
 
 	if event.OnDate.IsZero() {
 		return storage.ErrOnDateRequired
+	}
+
+	if event.Duration <= 0 {
+		return storage.ErrDurationRequired
 	}
 
 	eIntersected, err := s.GetIntersected(ctx, event)

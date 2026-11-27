@@ -94,4 +94,9 @@ integration-tests:
 
 	TEST_CALENDAR_DSN=$(TEST_DBSTRING) go test -race ./internal/...
 
+generate:
+	rm -rf internal/pb
+	mkdir -p internal/pb
+	protoc --proto_path=api/ --go_out=internal/pb --go-grpc_out=internal/pb api/**/*.proto
+
 .PHONY: build run build-img run-img version test lint

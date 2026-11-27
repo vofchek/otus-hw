@@ -3,7 +3,9 @@ package memorystorage
 import (
 	"context"
 	"fmt"
+	"slices"
 	"sync"
+	"time"
 
 	storage "github.com/vofchek/otus-hw/hw12_13_14_15_calendar/internal/storage"
 )
@@ -98,6 +100,22 @@ func (s *Storage) GetAll(_ context.Context) ([]storage.Event, error) {
 	return r, nil
 }
 
+func (s *Storage) GetByPeriod(_ context.Context, userID int, from, to time.Time) ([]storage.Event, error) {
+	s.mu.RLock()
+	defer s.mu.RUnlock()
+
+	r := make([]storage.Event, 0)
+	for _, v := range s.storage {
+		if !v.OnDate.Before(from) && !v.OnDate.After(to) && v.UserID == userID {
+			r = append(r, v)
+		}
+	}
+	slices.SortFunc(r, func(a, b storage.Event) int {
+		return a.OnDate.Compare(b.OnDate)
+	})
+	return r, nil
+}
+
 func (s *Storage) assertEventValid(event *storage.Event) error {
 	if len(event.ID) == 0 {
 		return fmt.Errorf("event id is empty")
@@ -109,6 +127,10 @@ func (s *Storage) assertEventValid(event *storage.Event) error {
 
 	if event.OnDate.IsZero() {
 		return storage.ErrOnDateRequired
+	}
+
+	if event.Duration <= 0 {
+		return storage.ErrDurationRequired
 	}
 
 	for _, e := range s.storage {

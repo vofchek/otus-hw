@@ -20,10 +20,9 @@ linters-settings:
           - github.com/spf13/viper
           - github.com/google/uuid
           - github.com/jackc/pgx/v5
-          - github.com/vofchek/otus-hw/hw12_13_14_15_calendar/internal/storage
-          - github.com/vofchek/otus-hw/hw12_13_14_15_calendar/internal/app
-          - github.com/vofchek/otus-hw/hw12_13_14_15_calendar/internal/logger
-          - github.com/vofchek/otus-hw/hw12_13_14_15_calendar/internal/server/http
+          - google.golang.org/grpc
+          - google.golang.org/protobuf
+          - github.com/vofchek/otus-hw/hw12_13_14_15_calendar/internal
       Test:
         files:
           - $test
@@ -31,8 +30,10 @@ linters-settings:
           - $gostd
           - github.com/stretchr/testify
           - go.uber.org/goleak
-          - github.com/vofchek/otus-hw/hw12_13_14_15_calendar/internal/storage
           - github.com/google/uuid
+          - google.golang.org/protobuf/types/known/timestamppb
+          - github.com/vofchek/otus-hw/hw12_13_14_15_calendar/internal
+          - google.golang.org/grpc/metadata
 issues:
   exclude-rules:
     - path: _test\.go

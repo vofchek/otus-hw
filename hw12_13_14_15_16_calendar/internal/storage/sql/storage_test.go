@@ -33,6 +33,7 @@ func TestAdd(t *testing.T) {
 	event := storage.NewEvent()
 	event.UserID = testUserID
 	event.OnDate = time.Now()
+	event.Duration = time.Second * 30
 
 	err = s.Add(ctx, *event)
 	require.NoError(t, err)
@@ -71,6 +72,7 @@ func TestUpdate(t *testing.T) {
 	event.UserID = testUserID
 	event.Title = "update A"
 	event.OnDate = time.Now()
+	event.Duration = time.Second * 30
 
 	err = s.Add(context.Background(), *event)
 	require.NoError(t, err)
@@ -108,6 +110,7 @@ func TestDelete(t *testing.T) {
 	event := storage.NewEvent()
 	event.UserID = testUserID
 	event.OnDate = time.Now()
+	event.Duration = time.Second * 30
 
 	err = s.Add(ctx, *event)
 	require.NoError(t, err)
@@ -303,4 +306,54 @@ func TestRequirements(t *testing.T) {
 		err := s.Add(context.Background(), *event)
 		require.ErrorIs(t, err, storage.ErrUserIDRequired)
 	})
+
+	t.Run("require Duration", func(t *testing.T) {
+		event := storage.NewEvent()
+		event.UserID = testUserID
+		event.OnDate = time.Now()
+
+		err := s.Add(context.Background(), *event)
+		require.ErrorIs(t, err, storage.ErrDurationRequired)
+	})
+}
+
+func TestGetByPeriod(t *testing.T) {
+	if _, exists := os.LookupEnv("TEST_CALENDAR_DSN"); !exists {
+		t.Skip("no TEST_CALENDAR_DSN")
+	}
+
+	ctx, cancel := context.WithTimeout(context.Background(), time.Second)
+	defer cancel()
+
+	s := New(os.Getenv("TEST_CALENDAR_DSN"))
+	require.NoError(t, s.Connect(ctx))
+	defer s.Close(ctx)
+
+	var err error
+
+	event := storage.NewEvent()
+	event.UserID = testUserID
+	event.OnDate = time.Now()
+	event.Duration = time.Second * 30
+
+	err = s.Add(ctx, *event)
+	require.NoError(t, err)
+	require.NotEmpty(t, event.ID, "event did not get id")
+
+	event1 := storage.NewEvent()
+	event1.UserID = testUserID
+	event1.OnDate = time.Now().Add(time.Hour * 12)
+	event1.Duration = time.Second * 30
+
+	err = s.Add(ctx, *event1)
+	require.NoError(t, err)
+	require.NotEmpty(t, event1.ID, "event did not get id")
+
+	found, err := s.GetByPeriod(ctx, testUserID, time.Now(), time.Now().Add(time.Hour*2))
+	require.NoError(t, err)
+	for _, e := range found {
+		require.Equal(t, event.ID, e.ID)
+	}
+
+	require.NoError(t, s.DeleteAll(ctx))
 }
