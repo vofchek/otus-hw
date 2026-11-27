@@ -1,6 +1,8 @@
 package internalgrpc
 
 import (
+	"context"
+	"strconv"
 	"testing"
 	"time"
 
@@ -10,8 +12,19 @@ import (
 	"github.com/vofchek/otus-hw/hw12_13_14_15_calendar/internal/pb"
 	"github.com/vofchek/otus-hw/hw12_13_14_15_calendar/internal/storage"
 	memorystorage "github.com/vofchek/otus-hw/hw12_13_14_15_calendar/internal/storage/memory"
+	"google.golang.org/grpc/metadata"
 	"google.golang.org/protobuf/types/known/timestamppb"
 )
+
+const testUserID = 1
+
+func userContext(tb testing.TB) context.Context {
+	tb.Helper()
+	return metadata.NewIncomingContext(
+		tb.Context(),
+		metadata.Pairs("user-id", strconv.Itoa(testUserID)),
+	)
+}
 
 func createService(tb testing.TB, storage *memorystorage.Storage) *Service {
 	tb.Helper()
@@ -34,7 +47,7 @@ func provideEvent(tb testing.TB, service *Service, title string, date time.Time,
 		OnDate:   timestamppb.New(date),
 		Duration: duration,
 	}
-	resp, err := service.Create(tb.Context(), req)
+	resp, err := service.Create(userContext(tb), req)
 	require.NoError(tb, err, "error on create")
 	require.NotEmpty(tb, resp.Data.Id)
 
@@ -50,7 +63,7 @@ func TestCreate(t *testing.T) {
 			OnDate:   timestamppb.New(time.Now()),
 			Duration: 100,
 		}
-		resp, err := s.Create(t.Context(), req)
+		resp, err := s.Create(userContext(t), req)
 		require.NoError(t, err, "error on create")
 
 		require.NotEmpty(t, resp.Data.Id)
@@ -71,7 +84,7 @@ func TestUpdate(t *testing.T) {
 			OnDate:   timestamppb.New(newDate),
 			Duration: int64(500),
 		}
-		resp, err := s.Update(t.Context(), req)
+		resp, err := s.Update(userContext(t), req)
 		require.NoError(t, err, "error on update")
 
 		require.Equal(t, "test updated", resp.Data.Title)
@@ -94,10 +107,10 @@ func TestDelete(t *testing.T) {
 		req := &pb.DeleteRequest{
 			Id: eventID,
 		}
-		_, err := service.Delete(t.Context(), req)
+		_, err := service.Delete(userContext(t), req)
 		require.NoError(t, err, "error on delete")
 
-		_, err = repo.GetByID(t.Context(), eventID)
+		_, err = repo.GetByID(userContext(t), eventID)
 		require.ErrorIs(t, err, storage.ErrNotFound)
 	})
 }
@@ -113,7 +126,7 @@ func TestGetEvents(t *testing.T) {
 			Date: timestamppb.New(date),
 		}
 
-		events, err := service.GetOnDate(t.Context(), req)
+		events, err := service.GetOnDate(userContext(t), req)
 		require.NoError(t, err)
 		for _, e := range events.Data {
 			require.Equal(t, eventID, e.Id)
@@ -128,7 +141,7 @@ func TestGetEvents(t *testing.T) {
 			Date: timestamppb.New(date),
 		}
 
-		events, err := service.GetOnWeek(t.Context(), req)
+		events, err := service.GetOnWeek(userContext(t), req)
 		require.NoError(t, err)
 		for _, e := range events.Data {
 			require.Equal(t, eventID, e.Id)
@@ -143,7 +156,7 @@ func TestGetEvents(t *testing.T) {
 			Date: timestamppb.New(date),
 		}
 
-		events, err := service.GetOnMonth(t.Context(), req)
+		events, err := service.GetOnMonth(userContext(t), req)
 		require.NoError(t, err)
 		for _, e := range events.Data {
 			require.Equal(t, eventID, e.Id)

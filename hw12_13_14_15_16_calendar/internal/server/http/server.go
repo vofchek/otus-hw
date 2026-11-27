@@ -7,12 +7,11 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"strconv"
 	"time"
 
 	"github.com/vofchek/otus-hw/hw12_13_14_15_calendar/internal/storage"
 )
-
-const userID = 1
 
 type Server struct {
 	Logger Logger
@@ -142,6 +141,15 @@ func writeResponse(w http.ResponseWriter, data any, err error) {
 	w.Write(respStr)
 }
 
+func getUserID(r *http.Request) (int, error) {
+	rawUserID := r.Header.Get("X-User-ID")
+	if rawUserID == "" {
+		return 0, errors.New("no userID in X-User-ID header")
+	}
+
+	return strconv.Atoi(rawUserID)
+}
+
 // обработчик создания.
 type CreateRequest struct {
 	Title            string        `json:"title"`
@@ -152,8 +160,17 @@ type CreateRequest struct {
 }
 
 func (s *Server) createHandler(w http.ResponseWriter, r *http.Request) {
+	var err error
+
+	userID, err := getUserID(r)
+	if err != nil {
+		w.WriteHeader(http.StatusBadRequest)
+		w.Write([]byte("unknown user"))
+		return
+	}
+
 	buf := make([]byte, r.ContentLength)
-	_, err := r.Body.Read(buf)
+	_, err = r.Body.Read(buf)
 	if err != nil && errors.Is(err, io.EOF) {
 		w.WriteHeader(http.StatusBadRequest)
 		w.Write([]byte("cant read body request"))
@@ -242,8 +259,17 @@ type GetRequest struct {
 }
 
 func (s *Server) getOnDateHandler(w http.ResponseWriter, r *http.Request) {
+	var err error
+
+	userID, err := getUserID(r)
+	if err != nil {
+		w.WriteHeader(http.StatusBadRequest)
+		w.Write([]byte("unknown user"))
+		return
+	}
+
 	buf := make([]byte, r.ContentLength)
-	_, err := r.Body.Read(buf)
+	_, err = r.Body.Read(buf)
 	if err != nil && errors.Is(err, io.EOF) {
 		w.WriteHeader(http.StatusBadRequest)
 		return
@@ -261,8 +287,17 @@ func (s *Server) getOnDateHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *Server) getOnWeekHandler(w http.ResponseWriter, r *http.Request) {
+	var err error
+
+	userID, err := getUserID(r)
+	if err != nil {
+		w.WriteHeader(http.StatusBadRequest)
+		w.Write([]byte("unknown user"))
+		return
+	}
+
 	buf := make([]byte, r.ContentLength)
-	_, err := r.Body.Read(buf)
+	_, err = r.Body.Read(buf)
 	if err != nil && errors.Is(err, io.EOF) {
 		w.WriteHeader(http.StatusBadRequest)
 		return
@@ -280,8 +315,17 @@ func (s *Server) getOnWeekHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *Server) getOnMonthHandler(w http.ResponseWriter, r *http.Request) {
+	var err error
+
+	userID, err := getUserID(r)
+	if err != nil {
+		w.WriteHeader(http.StatusBadRequest)
+		w.Write([]byte("unknown user"))
+		return
+	}
+
 	buf := make([]byte, r.ContentLength)
-	_, err := r.Body.Read(buf)
+	_, err = r.Body.Read(buf)
 	if err != nil && errors.Is(err, io.EOF) {
 		w.WriteHeader(http.StatusBadRequest)
 		return

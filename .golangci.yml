@@ -33,6 +33,7 @@ linters-settings:
           - github.com/google/uuid
           - google.golang.org/protobuf/types/known/timestamppb
           - github.com/vofchek/otus-hw/hw12_13_14_15_calendar/internal
+          - google.golang.org/grpc/metadata
 issues:
   exclude-rules:
     - path: _test\.go
